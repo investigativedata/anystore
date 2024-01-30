@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "anystore"
+version = "0.0.1"
+description = "Store and cache things anywhere"
+authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/investigativedata/anystore"
+repository = "https://github.com/investigativedata/anystore"
+documentation = "https://github.com/investigativedata/anystore"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+]
+packages = [{include = "anystore"}]
+
+[tool.poetry.scripts]
+anystore = "anystore.cli:cli"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/investigativedata/anystore/issues"
+
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4"
+banal = "^1.0.6"
+orjson = "^3.9.12"
+pydantic = "^2.6.0"
+fsspec = "^2023.12.2"
+s3fs = "^2023.12.2"
+gcsfs = "^2023.12.2.post1"
+adlfs = "^2024.1.0"
+sqlalchemy = "^2.0.25"
+redis = "^5.0.1"
+fakeredis = "^2.20.1"
+typer = "^0.9.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+pytest-env = "^1.1.1"
+black = "^23.11.0"
+isort = "^5.12.0"
+mypy = "^1.7.0"
+pre-commit = "^3.5.0"
+flake8 = "^6.1.0"
+ipdb = "^0.13.13"
+bump2version = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
