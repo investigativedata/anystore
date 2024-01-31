@@ -63,7 +63,7 @@ class Store(BaseModel):
 
 @cache
 def get_store(**kwargs) -> Store:
-    if kwargs.get("uri") is None:
+    if "uri" not in kwargs:
         if settings.yaml_uri is not None:
             return Store.from_yaml_uri(settings.yaml_uri, **kwargs)
         if settings.json_uri is not None:
