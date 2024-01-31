@@ -45,13 +45,6 @@ def test_io_write_stdout(capsys):
     assert captured.out == "hello"
 
 
-def test_io_none():
-    with pytest.raises(ValueError):
-        smart_read("")
-    with pytest.raises(ValueError):
-        smart_read(None)
-
-
 def test_io_smart_open(tmp_path: Path, fixtures_path: Path):
     with smart_open(fixtures_path / "lorem.txt", "r") as f:
         assert f.read().startswith("Lorem")
@@ -95,3 +88,10 @@ def test_io_smart_handler(fixtures_path: Path):
         h.write(content)
 
     assert smart_read(uri) == content
+
+
+def test_io_invalid():
+    with pytest.raises(ValueError):
+        smart_read("")
+    with pytest.raises(ValueError):
+        smart_read(None)

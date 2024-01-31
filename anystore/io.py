@@ -6,6 +6,8 @@ from typing import Any, BinaryIO, Generator, TextIO
 from fsspec import open
 from fsspec.core import OpenFile
 
+from anystore.util import ensure_uri
+
 log = logging.getLogger(__name__)
 
 DEFAULT_MODE = "rb"
@@ -24,16 +26,14 @@ class SmartHandler:
         *args,
         **kwargs,
     ) -> None:
-        if not uri:
-            raise ValueError("Missing uri")
-        self.uri = str(uri)
+        self.uri = ensure_uri(uri)
+        self.is_buffer = self.uri == "-"
         self.args = args
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
         if kwargs["mode"].endswith("b"):
             self.sys_io = self.sys_io.buffer
         self.kwargs = kwargs
-        self.is_buffer = self.uri == "-"
         self.handler: OpenFile | TextIO | None = None
 
     def open(self):
