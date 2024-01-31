@@ -44,11 +44,11 @@ class YamlMixin:
     """
 
     @classmethod
-    def from_yaml_str(cls, data: str) -> "YamlMixin":
+    def from_yaml_str(cls, data: str) -> Self:
         return cls(**yaml.safe_load(data))
 
     @classmethod
-    def from_yaml_uri(cls, uri: Uri) -> "YamlMixin":
+    def from_yaml_uri(cls, uri: Uri) -> Self:
         data = cached_from_uri(uri)
         return cls.from_yaml_str(data)
 
