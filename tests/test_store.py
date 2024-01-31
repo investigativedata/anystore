@@ -44,3 +44,6 @@ def test_store(tmp_path, fixtures_path):
     store = get_store()
     assert store.uri == "s3://anystore/another-store"
     assert get_store(uri="foo").uri.endswith("foo")
+
+    store = Store.from_json_uri(fixtures_path / "store.json")
+    assert store.uri == "file:///tmp/cache"

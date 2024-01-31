@@ -30,3 +30,6 @@ def test_mixin(fixtures_path: Path):
         == Model.from_yaml_uri(p / "model.yaml")
         == Model(foo="bar")
     )
+
+    m = Model(foo="bar", baz="")
+    assert m.baz is None
