@@ -1,6 +1,5 @@
 from functools import cache
 from typing import Any
-from urllib.parse import urljoin
 
 from pydantic import field_validator
 from anystore.exceptions import DoesNotExist
@@ -53,12 +52,13 @@ class Store(BaseModel):
         return {**config, **clean_dict(kwargs)}
 
     def get_key(self, key: Uri) -> str:
-        return urljoin(self.uri + "/", str(key))
+        return f"{self.uri}/{str(key).lstrip('/')}"
 
     @field_validator("uri", mode="before")
     @classmethod
     def ensure_uri(cls, v: Any) -> str:
-        return ensure_uri(v)
+        uri = ensure_uri(v)
+        return uri.rstrip("/")
 
 
 @cache
