@@ -38,6 +38,7 @@ fakeredis = "^2.20.1"
 typer = "^0.9.0"
 pyaml = "^23.12.0"
 cloudpickle = "^3.0.0"
+pydantic-settings = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
@@ -57,3 +58,5 @@ moto = "<5"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest_env]
+ANYSTORE_YAML_URI = "./tests/fixtures/store.yml"

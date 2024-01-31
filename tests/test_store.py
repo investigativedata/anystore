@@ -2,7 +2,7 @@ import pytest
 from moto import mock_s3
 from anystore.exceptions import DoesNotExist
 
-from anystore.store import Store
+from anystore.store import Store, get_store
 from tests.conftest import setup_s3
 
 
@@ -39,3 +39,8 @@ def test_store(tmp_path, fixtures_path):
 
     store = Store(uri="s3://anystore", raise_on_nonexist=False)
     assert store.get("nothing") is None
+
+    # initialize (take env vars into account)
+    store = get_store()
+    assert store.uri == "s3://anystore/another-store"
+    assert get_store(uri="foo").uri.endswith("foo")

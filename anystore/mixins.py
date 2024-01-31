@@ -29,13 +29,14 @@ class JsonMixin:
     """
 
     @classmethod
-    def from_json_str(cls, data: str) -> Self:
-        return cls(**clean_dict(orjson.loads(data)))
+    def from_json_str(cls, data: str, **kwargs) -> Self:
+        loaded = clean_dict({**orjson.loads(data), **kwargs})
+        return cls(**loaded)
 
     @classmethod
-    def from_json_uri(cls, uri: Uri) -> Self:
+    def from_json_uri(cls, uri: Uri, **kwargs) -> Self:
         data = cached_from_uri(uri)
-        return cls.from_json_str(data)
+        return cls.from_json_str(data, **kwargs)
 
 
 class YamlMixin:
@@ -44,13 +45,14 @@ class YamlMixin:
     """
 
     @classmethod
-    def from_yaml_str(cls, data: str) -> Self:
-        return cls(**yaml.safe_load(data))
+    def from_yaml_str(cls, data: str, **kwargs) -> Self:
+        loaded = clean_dict({**yaml.safe_load(data), **kwargs})
+        return cls(**loaded)
 
     @classmethod
-    def from_yaml_uri(cls, uri: Uri) -> Self:
+    def from_yaml_uri(cls, uri: Uri, **kwargs) -> Self:
         data = cached_from_uri(uri)
-        return cls.from_yaml_str(data)
+        return cls.from_yaml_str(data, **kwargs)
 
 
 class BaseModel(_BaseModel, JsonMixin, YamlMixin):

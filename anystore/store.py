@@ -1,3 +1,4 @@
+from functools import cache
 from typing import Any
 from urllib.parse import urljoin
 
@@ -9,12 +10,16 @@ from anystore.mixins import BaseModel
 from anystore.serialize import from_cloud, to_cloud
 from anystore.types import Uri
 from anystore.util import clean_dict, ensure_uri
+from anystore.settings import Settings
+
+
+settings = Settings()
 
 
 class Store(BaseModel):
-    uri: str
-    use_pickle: bool | None = True
-    raise_on_nonexist: bool | None = True
+    uri: str | None = settings.uri
+    use_pickle: bool | None = settings.use_pickle
+    raise_on_nonexist: bool | None = settings.raise_on_nonexist
     backend_config: dict[str, Any] | None = None
 
     def get(
@@ -54,3 +59,13 @@ class Store(BaseModel):
     @classmethod
     def ensure_uri(cls, v: Any) -> str:
         return ensure_uri(v)
+
+
+@cache
+def get_store(**kwargs) -> Store:
+    if kwargs.get("uri") is None:
+        if settings.yaml_uri is not None:
+            return Store.from_yaml_uri(settings.yaml_uri, **kwargs)
+        if settings.json_uri is not None:
+            return Store.from_json_uri(settings.json_uri, **kwargs)
+    return Store(**kwargs)

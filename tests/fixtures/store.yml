@@ -1,0 +1,2 @@
+uri: s3://anystore/another-store
+raise_on_onexist: false
