@@ -45,7 +45,7 @@ class SmartHandler:
         return self.handler
 
     def close(self):
-        if not self.is_buffer:
+        if not self.is_buffer and self.handler is not None:
             self.handler.close()
 
     def __enter__(self):
@@ -73,17 +73,13 @@ def smart_open(
         handler.close()
 
 
-def _smart_stream(uri, *args, **kwargs) -> Generator[str | bytes, None, None]:
+def smart_stream(uri, *args, **kwargs) -> Generator[str | bytes, None, None]:
     with smart_open(uri, *args, **kwargs) as fh:
         while line := fh.readline():
             yield line
 
 
 def smart_read(uri, *args, **kwargs) -> Any:
-    stream = kwargs.pop("stream", False)
-    if stream:
-        return _smart_stream(uri, *args, **kwargs)
-
     with smart_open(uri, *args, **kwargs) as fh:
         return fh.read()
 

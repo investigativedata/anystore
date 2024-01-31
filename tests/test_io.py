@@ -6,6 +6,7 @@ from moto import mock_s3
 from anystore.io import (
     SmartHandler,
     smart_open,
+    smart_stream,
     smart_read,
     smart_write,
 )
@@ -23,7 +24,7 @@ def test_io_read(fixtures_path: Path):
     assert txt.startswith("Lorem")
 
     tested = False
-    for ix, line in enumerate(smart_read(path, "r", stream=True)):
+    for ix, line in enumerate(smart_stream(path, "r")):
         if ix == 1:
             assert line.startswith("tempor")
             tested = True
@@ -69,10 +70,21 @@ def test_io_generic(fixtures_path: Path):
     smart_write(uri, content)
     assert smart_read(uri) == content
 
+    url = "http://localhost:8000/lorem.txt"
+    content = smart_read(url, mode="r")
+    assert content.startswith("Lorem")
+
+    tested = False
+    for line in smart_stream(url, "r"):
+        assert line.startswith("Lorem")
+        tested = True
+        break
+    assert tested
+
 
 @mock_s3
 def test_io_smart_handler(fixtures_path: Path):
-    with SmartHandler(fixtures_path / "lorem.txt", stream=True) as h:
+    with SmartHandler(fixtures_path / "lorem.txt") as h:
         line = h.readline()
         assert line.decode().startswith("Lorem")
 
