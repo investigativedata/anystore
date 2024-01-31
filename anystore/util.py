@@ -1,3 +1,5 @@
+from io import BytesIO
+import hashlib
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -34,3 +36,19 @@ def ensure_uri(uri: Any) -> str:
     if parsed.scheme:
         return uri
     return Path(uri).absolute().as_uri()
+
+
+def make_checksum(io: BytesIO, algorithm: str | None = "md5") -> str:
+    hash_ = getattr(hashlib, algorithm)()
+    for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
+        hash_.update(chunk)
+    return hash_.hexdigest()
+
+
+def make_data_checksum(data: Any, algorithm: str | None = "md5") -> str:
+    data = repr(data).encode()
+    return make_checksum(BytesIO(data), algorithm)
+
+
+def make_signature_key(*args, **kwargs) -> str:
+    return make_data_checksum((args, kwargs))

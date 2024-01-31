@@ -30,3 +30,7 @@ def test_util_ensure_uri():
         assert util.ensure_uri(None)
     with pytest.raises(ValueError):
         assert util.ensure_uri(" ")
+
+
+def test_util_checksum():
+    assert util.make_data_checksum("stable") == "a26dc899771c9e8503618745c4842c7d"
