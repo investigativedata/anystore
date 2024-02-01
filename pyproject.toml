@@ -52,7 +52,7 @@ pre-commit = "^3.5.0"
 flake8 = "^6.1.0"
 ipdb = "^0.13.13"
 bump2version = "^1.0.1"
-moto = "<5"
+moto = "<6"
 
 
 [build-system]
