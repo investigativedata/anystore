@@ -1,5 +1,5 @@
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from anystore.serialize import Mode
 
 
 class Settings(BaseSettings):
@@ -8,5 +8,5 @@ class Settings(BaseSettings):
     uri: str | None = ".anystore"
     yaml_uri: str | None = None
     json_uri: str | None = None
-    use_pickle: bool = True
+    serialization_mode: Mode | None = "auto"
     raise_on_nonexist: bool = True

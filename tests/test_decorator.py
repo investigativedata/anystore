@@ -12,7 +12,7 @@ def test_decorator(tmp_path):
     key = make_signature_key("x")
     assert store.get(key) is None
     assert get_data("x") == "data"
-    assert store.get(key) == "data"
+    assert store.get(key) == b"data"
 
     # store as arg, custom key func
     @anycache(store=store, key_func=lambda *args, **kwargs: args[0].upper())
@@ -21,4 +21,4 @@ def test_decorator(tmp_path):
 
     assert store.get("X") is None
     assert get_data2("x") == "data2"
-    assert store.get("X") == "data2"
+    assert store.get("X") == b"data2"

@@ -14,10 +14,16 @@ def test_mixin(fixtures_path: Path):
     assert isinstance(hash(model), int)
     assert len(set([model, model])) == 1
 
+    model = Model._from_uri(uri)
+    assert model.foo == "bar"
+
     uri = "http://localhost:8000/model.yaml"
     model = Model.from_yaml_uri(uri)
     assert model.foo == "bar"
     assert model.baz is None
+    
+    model = Model._from_uri(uri)
+    assert model.foo == "bar"
 
     uri = fixtures_path / "model.json"
     model = Model.from_yaml_uri(uri)

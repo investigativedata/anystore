@@ -14,19 +14,20 @@ def test_store(tmp_path, fixtures_path):
     store = Store(uri=tmp_path)
     key = "test"
     store.set(key, "foo")
-    assert store.get(key) == "foo"
+    assert store.get(key) == b"foo"
+    assert store.get(key, mode="r") == "foo"
     store.set(key, False)
     assert store.get(key) is False
 
     store = Store(uri="s3://anystore")
     key = "test"
     store.set(key, "foo")
-    assert store.get(key) == "foo"
+    assert store.get(key) == b"foo"
     store.set(key, False)
     assert store.get(key) is False
 
     # don't pickle "external" data
-    store = Store(uri=fixtures_path, use_pickle=False)
+    store = Store(uri=fixtures_path)
     content = store.get("lorem.txt", mode="r")
     assert content.startswith("Lorem")
 

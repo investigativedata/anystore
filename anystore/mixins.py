@@ -1,4 +1,4 @@
-from functools import cache
+from functools import lru_cache
 import logging
 from typing import Self
 
@@ -14,7 +14,7 @@ from anystore.util import clean_dict
 log = logging.getLogger(__name__)
 
 
-@cache
+@lru_cache(1000)
 def cached_from_uri(uri: Uri) -> str:
     """
     Cache remote sources on runtime
@@ -55,7 +55,16 @@ class YamlMixin:
         return cls.from_yaml_str(data, **kwargs)
 
 
-class BaseModel(_BaseModel, JsonMixin, YamlMixin):
+class RemoteMixin(JsonMixin, YamlMixin):
+    @classmethod
+    def _from_uri(cls, uri: Uri, **kwargs) -> Self:
+        try:
+            return cls.from_json_uri(uri, **kwargs)
+        except orjson.JSONDecodeError:
+            return cls.from_yaml_uri(uri, **kwargs)
+
+
+class BaseModel(_BaseModel, RemoteMixin):
     def __hash__(self) -> int:
         return hash(repr(self.model_dump()))
 
