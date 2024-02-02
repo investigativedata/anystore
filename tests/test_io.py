@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 
-from moto import mock_s3
+from moto import mock_aws
 
 from anystore.io import (
     SmartHandler,
@@ -55,7 +55,7 @@ def test_io_smart_open(tmp_path: Path, fixtures_path: Path):
     assert smart_read(tmp_path / "foo.txt", "r") == "bar"
 
 
-@mock_s3
+@mock_aws
 def test_io_generic(fixtures_path: Path):
     setup_s3()
     uri = "s3://anystore/foo"
@@ -75,7 +75,7 @@ def test_io_generic(fixtures_path: Path):
     assert tested
 
 
-@mock_s3
+@mock_aws
 def test_io_smart_handler(fixtures_path: Path):
     with SmartHandler(fixtures_path / "lorem.txt") as h:
         line = h.readline()
