@@ -16,7 +16,7 @@ def anycache(**store_kwargs):
                 return store.get(key)
             except DoesNotExist:
                 res = func(*args, **kwargs)
-                store.set(key, res)
+                store.put(key, res)
                 return res
 
         return _inner

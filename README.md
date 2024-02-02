@@ -46,7 +46,7 @@ smart_write(".local/data", data)
 ### command line
 
 ```bash
-anystore --store .cache set foo "bar"
+anystore --store .cache put foo "bar"
 
 anystore --store .cache get foo
 # "bar"
@@ -65,7 +65,7 @@ store = Store(uri="s3://mybucket/data", backend_config={"client_kwargs":{
 }})
 
 store.get("/2023/1.txt")
-store.set("/2023/2.txt", my_data)
+store.put("/2023/2.txt", my_data)
 ```
 
 ## Decorate your functions

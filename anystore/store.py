@@ -40,7 +40,7 @@ class Store(BaseModel):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
-    def set(
+    def put(
         self, key: Uri, value: Any, serialization_mode: Mode | None = None, **kwargs
     ):
         serialization_mode = serialization_mode or self.serialization_mode

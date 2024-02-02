@@ -13,17 +13,17 @@ def test_store(tmp_path, fixtures_path):
     # store and retrieve
     store = Store(uri=tmp_path)
     key = "test"
-    store.set(key, "foo")
+    store.put(key, "foo")
     assert store.get(key) == b"foo"
     assert store.get(key, mode="r") == "foo"
-    store.set(key, False)
+    store.put(key, False)
     assert store.get(key) is False
 
     store = Store(uri="s3://anystore")
     key = "test"
-    store.set(key, "foo")
+    store.put(key, "foo")
     assert store.get(key) == b"foo"
-    store.set(key, False)
+    store.put(key, False)
     assert store.get(key) is False
 
     # don't pickle "external" data
