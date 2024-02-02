@@ -59,8 +59,8 @@ def cli_get(
         smart_write(o, value, mode=mode)
 
 
-@cli.command("set")
-def cli_set(
+@cli.command("put")
+def cli_put(
     key: str,
     value: Annotated[
         Optional[str],
@@ -69,12 +69,12 @@ def cli_set(
     i: Annotated[str, typer.Option("-i")] = "-",
 ):
     """
-    Set content for a `key` to a store
+    Put content for a `key` to a store
     """
     with ErrorHandler():
         S = get_store(uri=state["uri"], use_pickle=state["pickle"])
         value = value or smart_read(i)
-        S.set(key, value)
+        S.put(key, value)
 
 
 @cli.command("io")
