@@ -31,7 +31,7 @@ class SmartHandler:
         self.args = args
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
-        if kwargs["mode"].endswith("b"):
+        if hasattr(self.sys_io, "buffer"):
             self.sys_io = self.sys_io.buffer
         self.kwargs = kwargs
         self.handler: OpenFile | TextIO | None = None

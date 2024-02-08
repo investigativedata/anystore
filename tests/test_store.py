@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 from moto import mock_aws
 from anystore.exceptions import DoesNotExist
@@ -48,3 +49,13 @@ def test_store(tmp_path, fixtures_path):
 
     store = Store.from_json_uri(fixtures_path / "store.json")
     assert store.uri == "file:///tmp/cache"
+
+    # put into not yet existing sub paths
+    store = Store(uri="s3://anystore", raise_on_nonexist=False)
+    store.put("foo/bar/baz", 1)
+    assert store.get("foo/bar/baz") == 1
+
+    store = Store(uri=tmp_path / "foo", raise_on_nonexist=False)
+    store.put("/bar/baz", 1)
+    assert (tmp_path / "foo/bar/baz").exists()
+    assert store.get("/bar/baz") == 1
