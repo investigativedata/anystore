@@ -23,7 +23,7 @@ def test_decorator(tmp_path):
     assert get_data2("x") == "data2"
     assert store.get("X") == b"data2"
 
-    # not yet existing
+    # not yet existing store
     @anycache(uri=tmp_path / "foo", key_func=lambda x: x)
     def get_data3(data):
         return data
