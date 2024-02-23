@@ -1,7 +1,8 @@
 import contextlib
 import logging
+from pathlib import Path
 import sys
-from typing import Any, BinaryIO, Generator, TextIO
+from typing import Any, BinaryIO, Generator, TextIO, TypeAlias
 
 from fsspec import open
 from fsspec.core import OpenFile
@@ -11,6 +12,8 @@ from anystore.util import ensure_uri
 log = logging.getLogger(__name__)
 
 DEFAULT_MODE = "rb"
+
+Uri: TypeAlias = Path | BinaryIO | TextIO | str
 
 
 def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:
@@ -22,7 +25,7 @@ def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:
 class SmartHandler:
     def __init__(
         self,
-        uri: Any,
+        uri: Uri,
         *args,
         **kwargs,
     ) -> None:
@@ -57,7 +60,7 @@ class SmartHandler:
 
 @contextlib.contextmanager
 def smart_open(
-    uri: Any,
+    uri: Uri,
     mode: str | None = None,
     *args,
     **kwargs,
@@ -73,13 +76,13 @@ def smart_open(
         handler.close()
 
 
-def smart_stream(uri, *args, **kwargs) -> Generator[str | bytes, None, None]:
+def smart_stream(uri: Uri, *args, **kwargs) -> Generator[str | bytes, None, None]:
     with smart_open(uri, *args, **kwargs) as fh:
         while line := fh.readline():
             yield line
 
 
-def smart_read(uri, *args, **kwargs) -> Any:
+def smart_read(uri: Uri, *args, **kwargs) -> Any:
     with smart_open(uri, *args, **kwargs) as fh:
         return fh.read()
 
