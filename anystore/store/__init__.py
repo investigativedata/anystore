@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.store.fs import Store
+from anystore.store.redis import RedisStore
 from anystore.util import ensure_uri
 
 
@@ -11,7 +12,7 @@ settings = Settings()
 
 
 @cache
-def get_store(**kwargs) -> Store:
+def get_store(**kwargs) -> BaseStore:
     uri = kwargs.get("uri")
     if uri is None:
         if settings.yaml_uri is not None:
@@ -23,10 +24,10 @@ def get_store(**kwargs) -> Store:
     uri = ensure_uri(uri)
     parsed = urlparse(uri)
     if parsed.scheme == "redis":
-        raise NotImplementedError
+        return RedisStore(**kwargs)
     if "sql" in parsed.scheme:
         raise NotImplementedError
     return Store(**kwargs)
 
 
-__all__ = ["get_store", "Store"]
+__all__ = ["get_store", "Store", "RedisStore"]
