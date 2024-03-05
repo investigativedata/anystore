@@ -12,6 +12,7 @@ from anystore.util import ensure_uri
 log = logging.getLogger(__name__)
 
 DEFAULT_MODE = "rb"
+DEFAULT_WRITE_MODE = "wb"
 
 Uri: TypeAlias = Path | BinaryIO | TextIO | str
 
@@ -26,12 +27,10 @@ class SmartHandler:
     def __init__(
         self,
         uri: Uri,
-        *args,
         **kwargs,
     ) -> None:
         self.uri = ensure_uri(uri)
         self.is_buffer = self.uri == "-"
-        self.args = args
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
         if hasattr(self.sys_io, "buffer"):
@@ -43,7 +42,7 @@ class SmartHandler:
         if self.is_buffer:
             self.handler = self.sys_io
         else:
-            handler = open(self.uri, *self.args, **self.kwargs)
+            handler = open(self.uri, **self.kwargs)
             self.handler = handler.open()
         return self.handler
 
@@ -61,33 +60,31 @@ class SmartHandler:
 @contextlib.contextmanager
 def smart_open(
     uri: Uri,
-    mode: str | None = None,
-    *args,
+    mode: str | None = DEFAULT_MODE,
     **kwargs,
 ):
-    if mode is not None:
-        kwargs["mode"] = mode
-    else:
-        kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
-    handler = SmartHandler(uri, *args, **kwargs)
+    handler = SmartHandler(uri, mode=mode, **kwargs)
     try:
         yield handler.open()
     finally:
         handler.close()
 
 
-def smart_stream(uri: Uri, *args, **kwargs) -> Generator[str | bytes, None, None]:
-    with smart_open(uri, *args, **kwargs) as fh:
+def smart_stream(
+    uri: Uri, mode: str | None = DEFAULT_MODE, **kwargs
+) -> Generator[str | bytes, None, None]:
+    with smart_open(uri, mode, **kwargs) as fh:
         while line := fh.readline():
             yield line
 
 
-def smart_read(uri: Uri, *args, **kwargs) -> Any:
-    with smart_open(uri, *args, **kwargs) as fh:
+def smart_read(uri: Uri, mode: str | None = DEFAULT_MODE, **kwargs) -> Any:
+    with smart_open(uri, mode, **kwargs) as fh:
         return fh.read()
 
 
-def smart_write(uri, content: bytes | str, *args, **kwargs) -> None:
-    kwargs["mode"] = kwargs.get("mode", "wb")
-    with smart_open(uri, *args, **kwargs) as fh:
+def smart_write(
+    uri, content: bytes | str, mode: str | None = DEFAULT_WRITE_MODE, **kwargs
+) -> None:
+    with smart_open(uri, mode, **kwargs) as fh:
         fh.write(content)
