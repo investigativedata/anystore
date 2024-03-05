@@ -2,14 +2,14 @@ from functools import cache
 from typing import Any
 
 from pydantic import field_validator
+
 from anystore.exceptions import DoesNotExist
 from anystore.io import smart_read, smart_write
-
 from anystore.mixins import BaseModel
-from anystore.serialize import from_store, to_store, Mode
+from anystore.serialize import Mode, from_store, to_store
+from anystore.settings import Settings
 from anystore.types import Uri
 from anystore.util import clean_dict, ensure_uri
-from anystore.settings import Settings
 
 
 settings = Settings()
