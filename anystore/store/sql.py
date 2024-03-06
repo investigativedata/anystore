@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from functools import cache
 from typing import Generator, Optional, Union
 
@@ -73,6 +72,7 @@ def make_table(name: str, metadata: MetaData) -> Table:
 
 
 class SqlStore(BaseStore):
+    _engine: Engine | None = None
     _conn: Connection | None = None
     _insert: Insert | None = None
     _table: Table | None = None
@@ -89,6 +89,7 @@ class SqlStore(BaseStore):
         metadata.create_all(engine, tables=[table], checkfirst=True)
         self._insert = get_insert(engine)
         self._table = table
+        self._engine = engine
         self._conn = engine.connect()
         self._sqlite = "sqlite" in engine.name.lower()
 
@@ -98,9 +99,7 @@ class SqlStore(BaseStore):
         exists = select(self._table).where(self._table.c.key == key)
         if self._conn.execute(exists).first():
             stmt = (
-                update(self._table)
-                .where(self._table.c.key == key)
-                .values(value=value)
+                update(self._table).where(self._table.c.key == key).values(value=value)
             )
         else:
             stmt = insert(self._table).values(key=key, value=value)
@@ -122,3 +121,18 @@ class SqlStore(BaseStore):
 
     def _get_key_prefix(self) -> str:
         return ""
+
+    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+        table = self._table
+        key = self.get_key(prefix or "")
+        if not prefix:
+            stmt = select(table.c.key)
+        else:
+            key = f"{key}%"
+            stmt = select(table.c.key).where(table.c.key.like(key))
+        with self._engine.connect() as conn:
+            conn = conn.execution_options(stream_results=True)
+            cursor = conn.execute(stmt)
+            while rows := cursor.fetchmany(10_000):
+                for row in rows:
+                    yield row[0]

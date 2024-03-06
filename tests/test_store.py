@@ -26,6 +26,17 @@ def _test_store(uri: str) -> bool:
     with pytest.raises(DoesNotExist):
         store.get("nothing")
     assert store.get("nothing", raise_on_nonexist=False) is None
+
+    # iterate
+    keys = [k for k in store.iterate_keys()]
+    assert len(keys) == 3
+    # assert all(store.exists(k) for k in keys)
+    keys = [k for k in store.iterate_keys("foo")]
+    assert keys[0] == "foo/bar/baz"
+    assert len(keys) == 1
+    keys = [k for k in store.iterate_keys("foo/bar")]
+    assert len(keys) == 1
+    assert keys[0] == "foo/bar/baz"
     return True
 
 

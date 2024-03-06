@@ -2,7 +2,7 @@
 Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
-from typing import Any
+from typing import Any, Generator
 import logging
 import os
 from functools import cache
@@ -51,4 +51,14 @@ class RedisStore(BaseStore):
         return res
 
     def _get_key_prefix(self) -> str:
-        return ""
+        if self.backend_config is not None:
+            return self.backend_config.get("redis_prefix") or "anystore"
+        return "anystore"
+
+    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+        con = get_redis(self.uri)
+        prefix = self.get_key(prefix or "") + "*"
+        key_prefix = self._get_key_prefix()
+        for key in con.scan_iter(prefix):
+            key = key.decode()
+            yield key[len(key_prefix) + 1 :]

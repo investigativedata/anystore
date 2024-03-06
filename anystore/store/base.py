@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Generator
 
 from pydantic import field_validator
 
@@ -37,6 +37,12 @@ class BaseStore(BaseModel):
         """
         raise NotImplementedError
 
+    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+        """
+        Backend specific key iterator
+        """
+        raise NotImplementedError
+
     def get(
         self,
         key: Uri,
@@ -71,7 +77,10 @@ class BaseStore(BaseModel):
         return {**config, **clean_dict(kwargs)}
 
     def get_key(self, key: Uri) -> str:
-        return f"{self._get_key_prefix()}/{str(key).lstrip('/')}"
+        return f"{self._get_key_prefix()}/{str(key)}".strip("/")
+
+    def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+        yield from self._iterate_keys(prefix)
 
     @field_validator("uri", mode="before")
     @classmethod
