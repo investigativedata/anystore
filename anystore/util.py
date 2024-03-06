@@ -8,6 +8,12 @@ from banal import clean_dict as _clean_dict
 from banal import is_mapping
 
 
+def _clean(val: Any) -> Any:
+    if val is False:
+        return False
+    return val or None
+
+
 def clean_dict(data: Any) -> dict[str, Any]:
     """
     strip out defaultdict and ensure str keys (for serialization)
@@ -16,7 +22,7 @@ def clean_dict(data: Any) -> dict[str, Any]:
         return {}
     return _clean_dict(
         {
-            str(k): clean_dict(dict(v)) or None if is_mapping(v) else v or None
+            str(k): clean_dict(dict(v)) or None if is_mapping(v) else _clean(v)
             for k, v in data.items()
         }
     )

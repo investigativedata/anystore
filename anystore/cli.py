@@ -77,6 +77,17 @@ def cli_put(
         S.put(key, value)
 
 
+@cli.command("keys")
+def cli_keys(
+    prefix: Annotated[Optional[str], typer.Argument(..., help="Key prefix")] = None,
+    o: Annotated[str, typer.Option("-o", help="Output uri")] = "-",
+):
+    with ErrorHandler():
+        S = get_store(uri=state["uri"], use_pickle=state["pickle"])
+        keys = "\n".join(S.iterate_keys(prefix))
+        smart_write(o, keys.encode())
+
+
 @cli.command("io")
 def cli_io(
     i: Annotated[str, typer.Option("-i", help="Input uri")] = "-",

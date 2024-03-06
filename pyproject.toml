@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.0.6"
+version = "0.1.0"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -27,19 +27,21 @@ anystore = "anystore.cli:cli"
 python = ">=3.11,<4"
 banal = "^1.0.6"
 orjson = "^3.9.15"
-pydantic = "^2.6.2"
+pydantic = "^2.6.3"
 fsspec = ">2023.10,<2025"
 s3fs = ">2023.10,<2025"
 gcsfs = ">2023.10,<2025"
 adlfs = ">2023.10,<2025"
-sqlalchemy = "^2.0.27"
-redis = "^5.0.1"
+sqlalchemy = "^2.0.28"
+redis = "^5.0.2"
 fakeredis = "^2.21.1"
 typer = "^0.9.0"
 pyaml = "^23.12.0"
 cloudpickle = "^3.0.0"
 pydantic-settings = "^2.2.1"
 rich = "^13.7.0"
+pytest = "^8.0.2"
+cryptography = ">=42.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.3,<9.0.0"
@@ -60,6 +62,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest_env]
+REDIS_DEBUG = 1
 ANYSTORE_YAML_URI = "./tests/fixtures/store.yml"
 AWS_ACCESS_KEY_ID = "foo"
 AWS_SECRET_ACCESS_KEY = "bar"

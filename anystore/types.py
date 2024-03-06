@@ -4,3 +4,4 @@ from typing import TypeAlias
 
 
 Uri: TypeAlias = PathLike | Path | str
+Value: TypeAlias = str | bytes

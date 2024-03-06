@@ -20,7 +20,8 @@ def anycache(**store_kwargs):
                 res = func(*args, **kwargs)
                 if serialize_func is not None:
                     res = serialize_func(res)
-                store.put(key, res)
+                if key is not None:
+                    store.put(key, res)
                 return res
 
         return _inner

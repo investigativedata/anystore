@@ -10,3 +10,10 @@ class Settings(BaseSettings):
     json_uri: str | None = None
     serialization_mode: Mode | None = "auto"
     raise_on_nonexist: bool = True
+
+
+class SqlSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="anystore_sql_")
+
+    table: str | None = "anystore"
+    pool_size: int | None = 5
