@@ -1,7 +1,7 @@
-import pytest
 from moto import mock_aws
-from anystore.exceptions import DoesNotExist
+import pytest
 
+from anystore.exceptions import DoesNotExist
 from anystore.store import Store, get_store
 from anystore.store.base import BaseStore
 from tests.conftest import setup_s3

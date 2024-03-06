@@ -1,13 +1,17 @@
+from moto import mock_aws
 from typer.testing import CliRunner
 
-from anystore.cli import cli
 from anystore import __version__
+from anystore.cli import cli
+from tests.conftest import setup_s3
 
 
 runner = CliRunner()
 
 
+@mock_aws
 def test_cli(tmp_path, fixtures_path):
+    setup_s3()
     res = runner.invoke(cli, "--help")
     assert res.exit_code == 0
 
@@ -17,8 +21,18 @@ def test_cli(tmp_path, fixtures_path):
     assert res.exit_code == 0
     assert res.stdout == "bar"
 
-    res = runner.invoke(cli, ["--store", "s3://foo/bar", "put", "foo", "bar"])
-    assert res.exit_code == 1
+    res = runner.invoke(cli, ["--store", str(tmp_path), "put", "test", "test"])
+    res = runner.invoke(cli, ["--store", str(tmp_path), "keys"])
+    assert res.exit_code == 0
+    assert len(res.stdout.split()) == 2
+    res = runner.invoke(cli, ["--store", str(tmp_path), "keys", "foo"])
+    assert res.exit_code == 0
+    assert len(res.stdout.split()) == 1
+
+    res = runner.invoke(cli, ["--store", "s3://anystore", "put", "foo", "bar"])
+    res = runner.invoke(cli, ["--store", "s3://anystore", "get", "foo"])
+    assert res.exit_code == 0
+    assert res.stdout == "bar"
 
     res = runner.invoke(cli, ["io", "-i", str(fixtures_path / "lorem.txt")])
     assert res.exit_code == 0
