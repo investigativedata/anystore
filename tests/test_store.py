@@ -15,6 +15,7 @@ def _test_store(uri: str) -> bool:
     store.put(key, "foo")
     assert store.get(key) == b"foo"
     assert store.get(key, mode="r") == "foo"
+    # overwrite
     store.put(key, False)
     assert store.get(key) is False
     store.put("other", None)
@@ -36,6 +37,10 @@ def test_store_s3():
 
 def test_store_redis():
     assert _test_store("redis:///localhost")
+
+
+def test_store_sql(tmp_path):
+    assert _test_store(f"sqlite:///{tmp_path}/db.sqlite")
 
 
 def test_store_fs(tmp_path, fixtures_path):

@@ -5,6 +5,7 @@ from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.store.fs import Store
 from anystore.store.redis import RedisStore
+from anystore.store.sql import SqlStore
 from anystore.util import ensure_uri
 
 
@@ -26,8 +27,8 @@ def get_store(**kwargs) -> BaseStore:
     if parsed.scheme == "redis":
         return RedisStore(**kwargs)
     if "sql" in parsed.scheme:
-        raise NotImplementedError
+        return SqlStore(**kwargs)
     return Store(**kwargs)
 
 
-__all__ = ["get_store", "Store", "RedisStore"]
+__all__ = ["get_store", "Store", "RedisStore", "SqlStore"]
