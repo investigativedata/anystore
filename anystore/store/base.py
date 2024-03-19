@@ -31,6 +31,12 @@ class BaseStore(BaseModel):
         """
         raise NotImplementedError
 
+    def _stream(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
+        """
+        Stream key line by line from actual backend (for file-like powered backend)
+        """
+        raise NotImplementedError
+
     def _get_key_prefix(self) -> str:
         """
         Get backend specific key prefix
@@ -59,6 +65,22 @@ class BaseStore(BaseModel):
             return from_store(
                 self._read(key, raise_on_nonexist, **kwargs), serialization_mode
             )
+        except FileNotFoundError:  # fsspec
+            if raise_on_nonexist:
+                raise DoesNotExist(f"Key does not exist: `{key}`")
+            return None
+
+    def stream(
+        self,
+        key: Uri,
+        raise_on_nonexist: bool | None = None,
+        serialization_mode: Mode | None = None,
+        **kwargs,
+    ) -> Generator[Any, None, None]:
+        key = self.get_key(key)
+        try:
+            for line in self._stream(key, raise_on_nonexist, **kwargs):
+                yield from_store(line, serialization_mode)
         except FileNotFoundError:  # fsspec
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
