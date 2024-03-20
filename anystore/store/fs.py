@@ -7,7 +7,7 @@ from typing import Generator
 import fsspec
 from banal import ensure_dict
 
-from anystore.io import smart_read, smart_write
+from anystore.io import smart_read, smart_stream, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStore
 from anystore.types import Uri, Value
@@ -27,7 +27,15 @@ class Store(BaseStore):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
-    # def _exists(self, key: Uri) -> bool:
+    def _stream(
+        self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs
+    ) -> Generator[Value, None, None]:
+        try:
+            yield from smart_stream(str(key), **kwargs)
+        except FileNotFoundError:
+            if raise_on_nonexist:
+                raise DoesNotExist(f"Key does not exist: `{key}`")
+
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")
 

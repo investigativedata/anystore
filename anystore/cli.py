@@ -82,9 +82,12 @@ def cli_keys(
     prefix: Annotated[Optional[str], typer.Argument(..., help="Key prefix")] = None,
     o: Annotated[str, typer.Option("-o", help="Output uri")] = "-",
 ):
+    """
+    Iterate keys in given store
+    """
     with ErrorHandler():
         S = get_store(uri=state["uri"], use_pickle=state["pickle"])
-        keys = "\n".join(S.iterate_keys(prefix))
+        keys = "\n".join(S.iterate_keys(prefix)) + "\n"
         smart_write(o, keys.encode())
 
 

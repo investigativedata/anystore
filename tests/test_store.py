@@ -68,6 +68,16 @@ def test_store_fs(tmp_path, fixtures_path):
     assert (tmp_path / "foo/bar/baz").exists()
     assert store.get("/bar/baz") == 1
 
+    # stream
+    store = Store(uri=fixtures_path)
+    tested = False
+    for ix, line in enumerate(store.stream("lorem.txt", mode="r")):
+        if ix == 1:
+            assert line.startswith("tempor")
+            tested = True
+            break
+    assert tested
+
 
 def test_store_intialize(fixtures_path):
     # initialize (take env vars into account)
