@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.1.1"
+version = "0.1.2"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -35,7 +35,7 @@ adlfs = ">2023.10,<2025"
 sqlalchemy = "^2.0.28"
 redis = "^5.0.2"
 fakeredis = "^2.21.1"
-typer = "^0.9.0"
+typer = ">=0.9,<0.13"
 pyaml = "^23.12.0"
 cloudpickle = "^3.0.0"
 pydantic-settings = "^2.2.1"
@@ -45,7 +45,7 @@ cryptography = ">=42.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.3,<9.0.0"
-pytest-cov = "^4.1.0"
+pytest-cov = ">=4.1,<6.0"
 pytest-env = "^1.1.1"
 black = ">=23.11,<25.0"
 isort = "^5.12.0"

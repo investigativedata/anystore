@@ -15,7 +15,9 @@ def anycache(**store_kwargs):
         def _inner(*args, **kwargs):
             key = key_func(*args, **kwargs)
             try:
-                return store.get(key)
+                if key is not None:
+                    return store.get(key)
+                raise DoesNotExist
             except DoesNotExist:
                 res = func(*args, **kwargs)
                 if serialize_func is not None:
