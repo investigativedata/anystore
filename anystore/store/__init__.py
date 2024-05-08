@@ -22,6 +22,7 @@ def get_store(**kwargs) -> BaseStore:
         if settings.json_uri is not None:
             store = BaseStore.from_json_uri(settings.json_uri, **kwargs)
             return get_store(**store.model_dump())
+        uri = settings.uri
     uri = ensure_uri(uri)
     parsed = urlparse(uri)
     if parsed.scheme == "redis":
