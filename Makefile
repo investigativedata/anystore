@@ -15,7 +15,7 @@ typecheck:
 	poetry run mypy --strict anystore
 
 test:
-	poetry run pytest -v --capture=sys --cov=anystore --cov-report term-missing
+	poetry run pytest -v --capture=sys --cov=anystore --cov-report=lcov
 
 build:
 	poetry run build
