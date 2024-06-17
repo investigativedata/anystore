@@ -9,10 +9,9 @@ from anystore.io import smart_read, smart_write
 from anystore.settings import Settings
 from anystore.store import get_store
 
-cli = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
-console = Console(stderr=True)
-
 settings = Settings()
+cli = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=settings.debug)
+console = Console(stderr=True)
 
 state = {"uri": settings.uri, "pickle": False}
 
@@ -23,6 +22,8 @@ class ErrorHandler:
 
     def __exit__(self, e, msg, _):
         if e is not None:
+            if settings.debug:
+                raise e
             console.print(f"[red][bold]{e.__name__}[/bold]: {msg}[/red]")
             raise typer.Exit(code=1)
 
