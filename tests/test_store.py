@@ -13,7 +13,7 @@ def _test_store(uri: str) -> bool:
     assert isinstance(store, BaseStore)
     key = "test"
     store.put(key, "foo")
-    assert store.get(key) == b"foo"
+    assert store.get(key) == "foo"
     assert store.get(key, mode="r") == "foo"
     # overwrite
     store.put(key, False)

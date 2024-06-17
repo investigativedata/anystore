@@ -46,4 +46,9 @@ def from_store(value: bytes, serialization_mode: Mode | None = "auto") -> Any:
         try:
             return cloudpickle.loads(value)
         except Exception:
+            if isinstance(value, bytes):
+                try:
+                    return value.decode()
+                except UnicodeDecodeError:
+                    pass
             return value

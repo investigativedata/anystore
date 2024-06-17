@@ -14,7 +14,7 @@ from anystore.util import clean_dict
 log = logging.getLogger(__name__)
 
 
-@lru_cache(1000)
+@lru_cache(128)
 def cached_from_uri(uri: Uri) -> str:
     """
     Cache remote sources on runtime
