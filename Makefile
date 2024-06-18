@@ -1,7 +1,7 @@
 all: clean install test
 
 install:
-	poetry install --with dev
+	poetry install --with dev --with redis --with sql
 
 lint:
 	poetry run flake8 anystore --count --select=E9,F63,F7,F82 --show-source --statistics
