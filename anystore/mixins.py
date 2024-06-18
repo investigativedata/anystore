@@ -14,7 +14,7 @@ from anystore.util import clean_dict
 log = logging.getLogger(__name__)
 
 
-@lru_cache(1000)
+@lru_cache(128)
 def cached_from_uri(uri: Uri) -> str:
     """
     Cache remote sources on runtime
@@ -30,7 +30,7 @@ class JsonMixin:
 
     @classmethod
     def from_json_str(cls, data: str, **kwargs) -> Self:
-        loaded = clean_dict({**orjson.loads(data), **kwargs})
+        loaded = clean_dict({**orjson.loads(data), **clean_dict(kwargs)})
         return cls(**loaded)
 
     @classmethod
@@ -46,7 +46,7 @@ class YamlMixin:
 
     @classmethod
     def from_yaml_str(cls, data: str, **kwargs) -> Self:
-        loaded = clean_dict({**yaml.safe_load(data), **kwargs})
+        loaded = clean_dict({**yaml.safe_load(data), **clean_dict(kwargs)})
         return cls(**loaded)
 
     @classmethod

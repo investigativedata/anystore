@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from anystore.serialize import Mode
 
@@ -10,6 +11,9 @@ class Settings(BaseSettings):
     json_uri: str | None = None
     serialization_mode: Mode | None = "auto"
     raise_on_nonexist: bool = True
+
+    debug: bool = Field(alias="debug", default=False)
+    redis_debug: bool = Field(alias="redis_debug", default=False)
 
 
 class SqlSettings(BaseSettings):

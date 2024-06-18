@@ -4,14 +4,13 @@ Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 
 from typing import Any, Generator
 import logging
-import os
 from functools import cache
 
-from banal import as_bool
 import redis
 import fakeredis
 
 from anystore.exceptions import DoesNotExist
+from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.types import Uri, Value
 
@@ -21,7 +20,8 @@ log = logging.getLogger(__name__)
 
 @cache
 def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
-    if as_bool(os.environ.get("REDIS_DEBUG")):
+    settings = Settings()
+    if settings.redis_debug:
         con = fakeredis.FakeStrictRedis()
         con.ping()
         log.info("Redis connected: `fakeredis`")

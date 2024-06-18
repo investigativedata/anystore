@@ -5,14 +5,14 @@ from anystore.mixins import BaseModel
 
 def test_serialize():
     # mode: auto
-    assert serialize.from_store(serialize.to_store("hello")) == b"hello"
-    assert serialize.from_store(serialize.to_store(b"hello")) == b"hello"
+    assert serialize.from_store(serialize.to_store("hello")) == "hello"
+    assert serialize.from_store(serialize.to_store(b"hello")) == "hello"
     assert serialize.from_store(serialize.to_store(1)) == 1
     assert serialize.from_store(serialize.to_store(1.1)) == 1.1
     assert serialize.from_store(serialize.to_store(None)) is None
     assert serialize.from_store(serialize.to_store(True)) is True
     assert serialize.from_store(serialize.to_store(False)) is False
-    assert serialize.from_store(serialize.to_store("")) == b""
+    assert serialize.from_store(serialize.to_store("")) == ""
 
     assert serialize.from_store(serialize.to_store({"a": 1})) == {"a": 1}
     assert serialize.from_store(serialize.to_store({"a": "1"})) == {"a": "1"}

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.1.4"
+version = "0.1.5"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -32,9 +32,6 @@ fsspec = ">2023.10,<2025"
 s3fs = ">2023.10,<2025"
 gcsfs = ">2023.10,<2025"
 adlfs = ">2023.10,<2025"
-sqlalchemy = "^2.0.28"
-redis = "^5.0.2"
-fakeredis = "^2.21.1"
 typer = ">=0.9,<0.13"
 pyaml = ">=23.12,<25.0"
 cloudpickle = "^3.0.0"
@@ -42,6 +39,13 @@ pydantic-settings = "^2.2.1"
 rich = "^13.7.0"
 pytest = "^8.0.2"
 cryptography = ">=42.0.4"
+
+[tool.poetry.group.redis.dependencies]
+redis = "^5.0.2"
+fakeredis = "^2.21.1"
+
+[tool.poetry.group.sql.dependencies]
+sqlalchemy = "^2.0.28"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.3,<9.0.0"

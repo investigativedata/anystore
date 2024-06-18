@@ -1,13 +1,14 @@
 from functools import cache
+from logging import getLogger
 from urllib.parse import urlparse
 
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.store.fs import Store
-from anystore.store.redis import RedisStore
-from anystore.store.sql import SqlStore
 from anystore.util import ensure_uri
 
+
+log = getLogger(__name__)
 
 settings = Settings()
 
@@ -26,9 +27,19 @@ def get_store(**kwargs) -> BaseStore:
     uri = ensure_uri(uri)
     parsed = urlparse(uri)
     if parsed.scheme == "redis":
-        return RedisStore(**kwargs)
+        try:
+            from anystore.store.redis import RedisStore
+
+            return RedisStore(**kwargs)
+        except ImportError:
+            log.error("Install redis dependencies via `anystore[redis]`")
     if "sql" in parsed.scheme:
-        return SqlStore(**kwargs)
+        try:
+            from anystore.store.sql import SqlStore
+
+            return SqlStore(**kwargs)
+        except ImportError:
+            log.error("Install sql dependencies via `anystore[sql]`")
     return Store(**kwargs)
 
 

@@ -84,7 +84,10 @@ def smart_read(uri: Uri, mode: str | None = DEFAULT_MODE, **kwargs) -> Any:
 
 
 def smart_write(
-    uri, content: bytes | str, mode: str | None = DEFAULT_WRITE_MODE, **kwargs
+    uri: Uri, content: bytes | str, mode: str | None = DEFAULT_WRITE_MODE, **kwargs
 ) -> None:
+    if uri == "-":
+        if isinstance(content, str):
+            content = content.encode()
     with smart_open(uri, mode, **kwargs) as fh:
         fh.write(content)
