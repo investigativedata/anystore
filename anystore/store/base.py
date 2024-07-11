@@ -6,7 +6,7 @@ from anystore.exceptions import DoesNotExist
 from anystore.mixins import BaseModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.types import Uri, Value
+from anystore.types import Uri, Value, Model
 from anystore.util import clean_dict, ensure_uri
 
 
@@ -16,6 +16,7 @@ settings = Settings()
 class BaseStore(BaseModel):
     uri: str | None = settings.uri
     serialization_mode: Mode | None = settings.serialization_mode
+    model: Model | None = None
     raise_on_nonexist: bool | None = settings.raise_on_nonexist
     backend_config: dict[str, Any] | None = None
 
@@ -54,16 +55,20 @@ class BaseStore(BaseModel):
         key: Uri,
         raise_on_nonexist: bool | None = None,
         serialization_mode: Mode | None = None,
+        model: Model | None = None,
         **kwargs,
     ) -> Any:
         serialization_mode = serialization_mode or self.serialization_mode
+        model = model or self.model
         if raise_on_nonexist is None:
             raise_on_nonexist = self.raise_on_nonexist
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         try:
             return from_store(
-                self._read(key, raise_on_nonexist, **kwargs), serialization_mode
+                self._read(key, raise_on_nonexist, **kwargs),
+                serialization_mode,
+                model=model,
             )
         except FileNotFoundError:  # fsspec
             if raise_on_nonexist:
@@ -75,24 +80,32 @@ class BaseStore(BaseModel):
         key: Uri,
         raise_on_nonexist: bool | None = None,
         serialization_mode: Mode | None = None,
+        model: Model | None = None,
         **kwargs,
     ) -> Generator[Any, None, None]:
         key = self.get_key(key)
+        model = model or self.model
         try:
             for line in self._stream(key, raise_on_nonexist, **kwargs):
-                yield from_store(line, serialization_mode)
+                yield from_store(line, serialization_mode, model=model)
         except FileNotFoundError:  # fsspec
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
     def put(
-        self, key: Uri, value: Any, serialization_mode: Mode | None = None, **kwargs
+        self,
+        key: Uri,
+        value: Any,
+        serialization_mode: Mode | None = None,
+        model: Model | None = None,
+        **kwargs,
     ):
         serialization_mode = serialization_mode or self.serialization_mode
+        model = model or self.model
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        self._write(key, to_store(value, serialization_mode))
+        self._write(key, to_store(value, serialization_mode, model=model))
 
     def ensure_kwargs(self, **kwargs) -> dict[str, Any]:
         config = clean_dict(self.backend_config)

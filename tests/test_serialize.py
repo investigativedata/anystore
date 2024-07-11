@@ -29,6 +29,12 @@ def test_serialize():
     model = Model(foo="bar")
     assert serialize.from_store(serialize.to_store(model)) == {"foo": "bar"}
 
+    # pass model to actually serialize to model instance:
+    assert (
+        serialize.from_store(serialize.to_store(model, model=Model), model=Model)
+        == model
+    )
+
     # mode: pickle
     assert (
         serialize.from_store(

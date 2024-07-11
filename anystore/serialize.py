@@ -4,11 +4,17 @@ from typing import Any, Literal, TypeAlias
 import cloudpickle
 from pydantic import BaseModel
 
+from anystore.types import Model
+
 
 Mode: TypeAlias = Literal["auto", "raw", "pickle", "json"]
 
 
-def to_store(value: Any, serialization_mode: Mode | None = "auto") -> bytes:
+def to_store(
+    value: Any, serialization_mode: Mode | None = "auto", model: Model | None = None
+) -> bytes:
+    if model is not None:
+        return value.model_dump_json().encode()
     mode = serialization_mode or "auto"
     if mode == "json":
         return orjson.dumps(value)
@@ -19,7 +25,7 @@ def to_store(value: Any, serialization_mode: Mode | None = "auto") -> bytes:
 
     # auto
     if isinstance(value, BaseModel):
-        return orjson.dumps(value.model_dump())
+        return value.model_dump_json().encode()
     if isinstance(value, bytes):
         return value
     if isinstance(value, str):
@@ -30,7 +36,15 @@ def to_store(value: Any, serialization_mode: Mode | None = "auto") -> bytes:
         return cloudpickle.dumps(value)
 
 
-def from_store(value: bytes, serialization_mode: Mode | None = "auto") -> Any:
+def from_store(
+    value: bytes,
+    serialization_mode: Mode | None = "auto",
+    model: Model | None = None,
+) -> Any:
+    if model is not None:
+        data = orjson.loads(value)
+        return model(**data)
+
     mode = serialization_mode or "auto"
     if mode == "raw":
         return value

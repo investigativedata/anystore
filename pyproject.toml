@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.1.5"
+version = "0.1.6"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -13,6 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 packages = [{include = "anystore"}]
 
