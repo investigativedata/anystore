@@ -2,26 +2,30 @@
 Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
-from typing import Any, Generator
+from typing import Any, Generator, TYPE_CHECKING
 import logging
 from functools import cache
 
 import redis
-import fakeredis
 
 from anystore.exceptions import DoesNotExist
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.types import Uri, Value
 
+if TYPE_CHECKING:
+    import fakeredis
+
 
 log = logging.getLogger(__name__)
 
 
 @cache
-def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
+def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
     settings = Settings()
     if settings.redis_debug:
+        import fakeredis
+
         con = fakeredis.FakeStrictRedis()
         con.ping()
         log.info("Redis connected: `fakeredis`")
