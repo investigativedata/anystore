@@ -10,11 +10,10 @@ from anystore.util import ensure_uri
 
 log = getLogger(__name__)
 
-settings = Settings()
-
 
 @cache
-def get_store(**kwargs) -> BaseStore:
+def get_store(settings: Settings | None = Settings(), **kwargs) -> BaseStore:
+    settings = settings or Settings()
     uri = kwargs.get("uri")
     if uri is None:
         if settings.yaml_uri is not None:
