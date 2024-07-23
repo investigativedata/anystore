@@ -1,4 +1,5 @@
 from typing import Any, Generator
+from urllib.parse import urlparse
 
 from pydantic import field_validator
 
@@ -14,11 +15,16 @@ settings = Settings()
 
 
 class BaseStore(BaseModel):
-    uri: str | None = settings.uri
+    uri: Uri | None = settings.uri
+    scheme: str | None = None
     serialization_mode: Mode | None = settings.serialization_mode
     model: Model | None = None
     raise_on_nonexist: bool | None = settings.raise_on_nonexist
     backend_config: dict[str, Any] | None = None
+
+    def __init__(self, **data):
+        data["scheme"] = urlparse(str(data["uri"])).scheme
+        super().__init__(**data)
 
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
         """
@@ -35,6 +41,12 @@ class BaseStore(BaseModel):
     def _stream(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         """
         Stream key line by line from actual backend (for file-like powered backend)
+        """
+        raise NotImplementedError
+
+    def _exists(self, key: Uri) -> bool:
+        """
+        Check if the given key exists
         """
         raise NotImplementedError
 
@@ -106,6 +118,9 @@ class BaseStore(BaseModel):
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         self._write(key, to_store(value, serialization_mode, model=model))
+
+    def exists(self, key: Uri) -> bool:
+        return self._exists(key)
 
     def ensure_kwargs(self, **kwargs) -> dict[str, Any]:
         config = clean_dict(self.backend_config)
