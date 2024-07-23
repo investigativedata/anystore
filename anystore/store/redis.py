@@ -54,6 +54,11 @@ class RedisStore(BaseStore):
             res = res.decode()
         return res
 
+    def _exists(self, key: Uri) -> bool:
+        con = get_redis(self.uri)
+        res = con.exists(self.get_key(key))
+        return bool(res)
+
     def _get_key_prefix(self) -> str:
         if self.backend_config is not None:
             return self.backend_config.get("redis_prefix") or "anystore"

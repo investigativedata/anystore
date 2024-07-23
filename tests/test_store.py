@@ -22,10 +22,12 @@ def _test_store(uri: str) -> bool:
     assert store.get("other") is None
     store.put("foo/bar/baz", 1)
     assert store.get("foo/bar/baz") == 1
+    assert store.exists("foo/bar/baz") is True
     # non existing key
     with pytest.raises(DoesNotExist):
         store.get("nothing")
     assert store.get("nothing", raise_on_nonexist=False) is None
+    assert store.exists("nothing") is False
 
     # iterate
     keys = [k for k in store.iterate_keys()]
@@ -81,6 +83,7 @@ def test_store_fs(tmp_path, fixtures_path):
 
 def test_store_intialize(fixtures_path):
     # initialize (take env vars into account)
+    get_store.cache_clear()
     store = get_store()
     assert store.uri == "s3://anystore/another-store"
     assert get_store(uri="foo").uri.endswith("foo")

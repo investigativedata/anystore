@@ -39,3 +39,17 @@ def test_decorator(tmp_path):
     assert get_data4(5) == [0, 1, 2, 3, 4]
     # now from cache:
     assert get_data4(5) == [0, 1, 2, 3, 4]
+
+
+def test_decorator_no_args(monkeypatch):
+    get_store.cache_clear()
+    monkeypatch.delenv("ANYSTORE_YAML_URI")
+
+    # without args
+    @anycache
+    def get_data5(x):
+        return x
+
+    assert get_data5(5) == 5
+    # now from cache:
+    assert get_data5(5) == 5

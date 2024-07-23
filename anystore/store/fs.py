@@ -36,6 +36,10 @@ class Store(BaseStore):
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
 
+    def _exists(self, key: Uri) -> bool:
+        fs = fsspec.filesystem(self.scheme)
+        return fs.exists(self.get_key(key))
+
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")
 

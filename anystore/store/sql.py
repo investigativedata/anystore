@@ -119,6 +119,13 @@ class SqlStore(BaseStore):
         if raise_on_nonexist:
             raise DoesNotExist
 
+    def _exists(self, key: Uri) -> bool:
+        key = str(key)
+        stmt = select(self._table).where(self._table.c.key == key)
+        stmt = select(stmt.exists())
+        for res in self._conn.execute(stmt).first():
+            return res
+
     def _get_key_prefix(self) -> str:
         return ""
 

@@ -44,14 +44,14 @@ def ensure_uri(uri: Any) -> str:
     return Path(uri).absolute().as_uri()
 
 
-def make_checksum(io: BytesIO, algorithm: str | None = "md5") -> str:
+def make_checksum(io: BytesIO, algorithm: str = "md5") -> str:
     hash_ = getattr(hashlib, algorithm)()
     for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
         hash_.update(chunk)
     return hash_.hexdigest()
 
 
-def make_data_checksum(data: Any, algorithm: str | None = "md5") -> str:
+def make_data_checksum(data: Any, algorithm: str = "md5") -> str:
     data = repr(data).encode()
     return make_checksum(BytesIO(data), algorithm)
 

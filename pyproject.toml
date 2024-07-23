@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.1.6"
+version = "0.1.7"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -59,7 +59,7 @@ pre-commit = "^3.5.0"
 flake8 = ">=6.1,<8.0"
 ipdb = "^0.13.13"
 bump2version = "^1.0.1"
-moto = "^5.0.0"
+moto = "^5.0.11"
 
 
 [build-system]
