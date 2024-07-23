@@ -12,7 +12,7 @@ log = getLogger(__name__)
 
 
 @cache
-def get_store(settings: Settings | None = Settings(), **kwargs) -> BaseStore:
+def get_store(settings: Settings | None = None, **kwargs) -> BaseStore:
     settings = settings or Settings()
     uri = kwargs.get("uri")
     if uri is None:

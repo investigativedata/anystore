@@ -23,7 +23,8 @@ class BaseStore(BaseModel):
     backend_config: dict[str, Any] | None = None
 
     def __init__(self, **data):
-        data["scheme"] = urlparse(str(data["uri"])).scheme
+        uri = data.get("uri", settings.uri)
+        data["scheme"] = urlparse(str(uri)).scheme
         super().__init__(**data)
 
     def _write(self, key: Uri, value: Value, **kwargs) -> None:

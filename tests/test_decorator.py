@@ -42,6 +42,7 @@ def test_decorator(tmp_path):
 
 
 def test_decorator_no_args(monkeypatch):
+    get_store.cache_clear()
     monkeypatch.delenv("ANYSTORE_YAML_URI")
 
     # without args

@@ -83,6 +83,7 @@ def test_store_fs(tmp_path, fixtures_path):
 
 def test_store_intialize(fixtures_path):
     # initialize (take env vars into account)
+    get_store.cache_clear()
     store = get_store()
     assert store.uri == "s3://anystore/another-store"
     assert get_store(uri="foo").uri.endswith("foo")
