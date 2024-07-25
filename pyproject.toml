@@ -40,6 +40,7 @@ pydantic-settings = "^2.2.1"
 rich = "^13.7.0"
 pytest = "^8.0.2"
 cryptography = ">=42.0.4"
+structlog = "^24.4.0"
 
 [tool.poetry.group.redis.dependencies]
 redis = "^5.0.2"

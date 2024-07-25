@@ -3,12 +3,12 @@ Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
 from typing import Any, Generator, TYPE_CHECKING
-import logging
 from functools import cache
 
 import redis
 
 from anystore.exceptions import DoesNotExist
+from anystore.logging import get_logger
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.types import Uri, Value
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import fakeredis
 
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 @cache
