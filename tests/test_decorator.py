@@ -1,4 +1,6 @@
-from anystore.decorators import anycache
+import asyncio
+import pytest
+from anystore.decorators import anycache, async_anycache
 from anystore.util import make_signature_key
 from anystore.store import get_store
 
@@ -53,3 +55,15 @@ def test_decorator_no_args(monkeypatch):
     assert get_data5(5) == 5
     # now from cache:
     assert get_data5(5) == 5
+
+
+@pytest.mark.asyncio
+async def test_decorator_async():
+    @async_anycache
+    async def get_data6(x):
+        await asyncio.sleep(1)
+        return x
+
+    assert await get_data6(6) == 6
+    # now from cache:
+    assert await get_data6(6) == 6
