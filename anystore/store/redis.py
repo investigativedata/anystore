@@ -32,7 +32,7 @@ def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
         return con
     con = redis.from_url(uri)
     con.ping()
-    log.info("Redis connected: `{uri}`")
+    log.info(f"Redis connected: `{uri}`")
     return con
 
 
