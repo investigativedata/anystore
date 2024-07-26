@@ -6,6 +6,7 @@ import typer
 
 from anystore import __version__
 from anystore.io import smart_read, smart_write
+from anystore.logging import configure_logging
 from anystore.settings import Settings
 from anystore.store import get_store
 
@@ -43,6 +44,7 @@ def cli_store(
         raise typer.Exit()
     state["uri"] = store
     state["pickle"] = pickle
+    configure_logging()
 
 
 @cli.command("get")

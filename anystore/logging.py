@@ -21,7 +21,9 @@ from structlog.stdlib import (
 )
 from structlog.stdlib import get_logger as get_raw_logger
 
-from . import settings
+from anystore.settings import Settings
+
+settings = Settings()
 
 
 def get_logger(name: str, *args, **kwargs) -> BoundLogger:
@@ -42,7 +44,7 @@ def configure_logging(level: int = logging.INFO) -> None:
         UnicodeDecoder(),
     ]
 
-    if settings.LOG_JSON:
+    if settings.log_json:
         shared_processors.append(format_exc_info)
         shared_processors.append(format_json)
         formatter = ProcessorFormatter(
@@ -71,8 +73,8 @@ def configure_logging(level: int = logging.INFO) -> None:
         logger_factory=LoggerFactory(),
     )
 
-    # handler for low level logs that should be sent to STDOUT
-    out_handler = logging.StreamHandler(sys.stdout)
+    # handler for low level logs that should be sent to STDERR
+    out_handler = logging.StreamHandler(sys.stderr)
     out_handler.setLevel(level)
     out_handler.addFilter(_MaxLevelFilter(logging.WARNING))
     out_handler.setFormatter(formatter)
@@ -82,7 +84,7 @@ def configure_logging(level: int = logging.INFO) -> None:
     error_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(settings.LOG_LEVEL)
+    root_logger.setLevel(settings.log_level.upper())
     root_logger.addHandler(out_handler)
     root_logger.addHandler(error_handler)
 

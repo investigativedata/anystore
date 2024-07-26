@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     debug: bool = Field(alias="debug", default=False)
     redis_debug: bool = Field(alias="redis_debug", default=False)
+    log_json: bool = Field(alias="log_json", default=False)
+    log_level: str = Field(alias="log_level", default="info")
 
 
 class SqlSettings(BaseSettings):
