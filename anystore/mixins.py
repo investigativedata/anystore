@@ -1,5 +1,4 @@
 from functools import lru_cache
-import logging
 from typing import Self
 
 import orjson
@@ -8,10 +7,11 @@ from pydantic import field_validator
 import yaml
 
 from anystore.io import smart_read
+from anystore.logging import get_logger
 from anystore.types import Uri
 from anystore.util import clean_dict
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 @lru_cache(128)

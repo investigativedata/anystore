@@ -1,5 +1,4 @@
 import contextlib
-import logging
 from pathlib import Path
 import sys
 from typing import Any, BinaryIO, Generator, TextIO, TypeAlias
@@ -7,9 +6,10 @@ from typing import Any, BinaryIO, Generator, TextIO, TypeAlias
 from fsspec import open
 from fsspec.core import OpenFile
 
+from anystore.logging import get_logger
 from anystore.util import ensure_uri
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 DEFAULT_MODE = "rb"
 DEFAULT_WRITE_MODE = "wb"

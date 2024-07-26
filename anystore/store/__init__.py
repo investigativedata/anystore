@@ -1,14 +1,14 @@
 from functools import cache
-from logging import getLogger
 from urllib.parse import urlparse
 
+from anystore.logging import get_logger
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.store.fs import Store
 from anystore.util import ensure_uri
 
 
-log = getLogger(__name__)
+log = get_logger(__name__)
 
 
 @cache
