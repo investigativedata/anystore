@@ -40,6 +40,10 @@ class Store(BaseStore):
         fs = fsspec.filesystem(self.scheme)
         return fs.exists(self.get_key(key))
 
+    def _delete(self, key: Uri) -> None:
+        fs = fsspec.filesystem(self.scheme)
+        fs.delete(self.get_key(key))
+
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")
 

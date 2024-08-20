@@ -10,6 +10,7 @@ from sqlalchemy import (
     Table,
     Unicode,
     create_engine,
+    delete,
     func,
     insert,
     select,
@@ -124,7 +125,13 @@ class SqlStore(BaseStore):
         stmt = select(self._table).where(self._table.c.key == key)
         stmt = select(stmt.exists())
         for res in self._conn.execute(stmt).first():
-            return res
+            return bool(res)
+        return False
+
+    def _delete(self, key: Uri) -> None:
+        key = str(key)
+        stmt = delete(self._table).where(self._table.c.key == key)
+        self._conn.execute(stmt)
 
     def _get_key_prefix(self) -> str:
         return ""

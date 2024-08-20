@@ -1,3 +1,4 @@
+import time
 from moto import mock_aws
 import pytest
 
@@ -39,8 +40,19 @@ def _test_store(uri: str) -> bool:
     keys = [k for k in store.iterate_keys("foo/bar")]
     assert len(keys) == 1
     assert keys[0] == "foo/bar/baz"
-    return True
 
+    # pop
+    store.put("popped", 1)
+    assert store.pop("popped") == 1
+    assert store.get("popped", raise_on_nonexist=False) is None
+
+    # ttl
+    # store.put("expired", 1, ttl=4)
+    # assert store.get("expired") == 1
+    # time.sleep(5)
+    # assert store.get("expired", raise_on_nonexist=False) is None
+
+    return True
 
 @mock_aws
 def test_store_s3():

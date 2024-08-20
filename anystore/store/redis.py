@@ -59,6 +59,10 @@ class RedisStore(BaseStore):
         res = con.exists(self.get_key(key))
         return bool(res)
 
+    def _delete(self, key: Uri) -> None:
+        con = get_redis(self.uri)
+        con.delete(self.get_key(key))
+
     def _get_key_prefix(self) -> str:
         if self.backend_config is not None:
             return self.backend_config.get("redis_prefix") or "anystore"

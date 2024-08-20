@@ -39,6 +39,12 @@ class BaseStore(BaseModel):
         """
         raise NotImplementedError
 
+    def _delete(self, key: Uri) -> None:
+        """
+        Delete key from actual backend
+        """
+        raise NotImplementedError
+
     def _stream(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         """
         Stream key line by line from actual backend (for file-like powered backend)
@@ -88,6 +94,16 @@ class BaseStore(BaseModel):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
+    def pop(
+        self,
+        key: Uri,
+        *args,
+        **kwargs,
+    ) -> Any:
+        value = self.get(key, *args, **kwargs)
+        self._delete(key)
+        return value
+
     def stream(
         self,
         key: Uri,
@@ -112,6 +128,7 @@ class BaseStore(BaseModel):
         value: Any,
         serialization_mode: Mode | None = None,
         model: Model | None = None,
+        ttl: int | None = None,
         **kwargs,
     ):
         serialization_mode = serialization_mode or self.serialization_mode
