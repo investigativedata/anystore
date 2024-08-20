@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     json_uri: str | None = None
     serialization_mode: Mode | None = "auto"
     raise_on_nonexist: bool = True
+    default_ttl: int = 0
 
     debug: bool = Field(alias="debug", default=False)
     redis_debug: bool = Field(alias="redis_debug", default=False)

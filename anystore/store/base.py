@@ -20,6 +20,7 @@ class BaseStore(BaseModel):
     serialization_mode: Mode | None = settings.serialization_mode
     model: Model | None = None
     raise_on_nonexist: bool | None = settings.raise_on_nonexist
+    default_ttl: int | None = settings.default_ttl
     backend_config: dict[str, Any] | None = None
 
     def __init__(self, **data):
@@ -94,12 +95,7 @@ class BaseStore(BaseModel):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
-    def pop(
-        self,
-        key: Uri,
-        *args,
-        **kwargs,
-    ) -> Any:
+    def pop(self, key: Uri, *args, **kwargs) -> Any:
         value = self.get(key, *args, **kwargs)
         self._delete(key)
         return value
@@ -135,7 +131,8 @@ class BaseStore(BaseModel):
         model = model or self.model
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        self._write(key, to_store(value, serialization_mode, model=model))
+        ttl = ttl or self.default_ttl or None
+        self._write(key, to_store(value, serialization_mode, model=model), ttl=ttl)
 
     def exists(self, key: Uri) -> bool:
         return self._exists(key)

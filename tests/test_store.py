@@ -5,6 +5,8 @@ import pytest
 from anystore.exceptions import DoesNotExist
 from anystore.store import Store, get_store
 from anystore.store.base import BaseStore
+from anystore.store.redis import RedisStore
+from anystore.store.sql import SqlStore
 from tests.conftest import setup_s3
 
 
@@ -47,12 +49,14 @@ def _test_store(uri: str) -> bool:
     assert store.get("popped", raise_on_nonexist=False) is None
 
     # ttl
-    # store.put("expired", 1, ttl=4)
-    # assert store.get("expired") == 1
-    # time.sleep(5)
-    # assert store.get("expired", raise_on_nonexist=False) is None
+    if isinstance(store, (RedisStore, SqlStore)):
+        store.put("expired", 1, ttl=1)
+        assert store.get("expired") == 1
+        time.sleep(1)
+        assert store.get("expired", raise_on_nonexist=False) is None
 
     return True
+
 
 @mock_aws
 def test_store_s3():

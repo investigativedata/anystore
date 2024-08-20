@@ -1,3 +1,4 @@
+from datetime import timedelta, datetime
 from functools import cache
 from typing import Generator, Optional, Union
 
@@ -5,6 +6,7 @@ from banal import ensure_dict
 from sqlalchemy import (
     Column,
     DateTime,
+    Integer,
     LargeBinary,
     MetaData,
     Table,
@@ -69,6 +71,7 @@ def make_table(name: str, metadata: MetaData) -> Table:
             DateTime(timezone=True),
             server_default=func.now(),
         ),
+        Column("ttl", Integer(), nullable=True),
     )
 
 
@@ -96,27 +99,37 @@ class SqlStore(BaseStore):
 
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
         key = str(key)
+        ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
         exists = select(self._table).where(self._table.c.key == key)
         if self._conn.execute(exists).first():
             stmt = (
-                update(self._table).where(self._table.c.key == key).values(value=value)
+                update(self._table)
+                .where(self._table.c.key == key)
+                .values(value=value, ttl=ttl)
             )
         else:
-            stmt = insert(self._table).values(key=key, value=value)
+            stmt = insert(self._table).values(key=key, value=value, ttl=ttl)
         self._conn.execute(stmt)
         self._conn.commit()
 
-    def _read(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Value:
+    def _read(
+        self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs
+    ) -> Value | None:
         key = str(key)
         stmt = select(self._table).where(self._table.c.key == key)
         res = self._conn.execute(stmt).first()
         if res:
-            res = res[1]
+            key, value, ts, ttl = res
+            if ttl and ts + timedelta(seconds=ttl) < datetime.utcnow():  # FIXME
+                self._delete(key)
+                if raise_on_nonexist:
+                    raise DoesNotExist
+                return
             # mimic fs read mode:
-            if kwargs.get("mode") == "r" and isinstance(res, bytes):
-                res = res.decode()
-            return res
+            if kwargs.get("mode") == "r" and isinstance(value, bytes):
+                value = value.decode()
+            return value
         if raise_on_nonexist:
             raise DoesNotExist
 

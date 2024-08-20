@@ -15,7 +15,8 @@ from anystore.types import Uri, Value
 
 class Store(BaseStore):
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
-        return smart_write(key, value, **kwargs)
+        kwargs.pop("ttl", None)
+        smart_write(str(key), value, **kwargs)
 
     def _read(
         self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs

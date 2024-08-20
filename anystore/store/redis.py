@@ -38,8 +38,9 @@ def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
 
 class RedisStore(BaseStore):
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
+        ttl = kwargs.pop("ttl", None) or None
         con = get_redis(self.uri)
-        con.set(str(key), value, **kwargs)
+        con.set(str(key), value, ex=ttl, **kwargs)
 
     def _read(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         con = get_redis(self.uri)
