@@ -15,7 +15,8 @@ from anystore.types import Uri, Value
 
 class Store(BaseStore):
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
-        return smart_write(key, value, **kwargs)
+        kwargs.pop("ttl", None)
+        smart_write(str(key), value, **kwargs)
 
     def _read(
         self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs
@@ -39,6 +40,10 @@ class Store(BaseStore):
     def _exists(self, key: Uri) -> bool:
         fs = fsspec.filesystem(self.scheme)
         return fs.exists(self.get_key(key))
+
+    def _delete(self, key: Uri) -> None:
+        fs = fsspec.filesystem(self.scheme)
+        fs.delete(self.get_key(key))
 
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")

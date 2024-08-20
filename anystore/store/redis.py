@@ -32,14 +32,15 @@ def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
         return con
     con = redis.from_url(uri)
     con.ping()
-    log.info("Redis connected: `{uri}`")
+    log.info(f"Redis connected: `{uri}`")
     return con
 
 
 class RedisStore(BaseStore):
     def _write(self, key: Uri, value: Value, **kwargs) -> None:
+        ttl = kwargs.pop("ttl", None) or None
         con = get_redis(self.uri)
-        con.set(str(key), value, **kwargs)
+        con.set(str(key), value, ex=ttl, **kwargs)
 
     def _read(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         con = get_redis(self.uri)
@@ -58,6 +59,10 @@ class RedisStore(BaseStore):
         con = get_redis(self.uri)
         res = con.exists(self.get_key(key))
         return bool(res)
+
+    def _delete(self, key: Uri) -> None:
+        con = get_redis(self.uri)
+        con.delete(self.get_key(key))
 
     def _get_key_prefix(self) -> str:
         if self.backend_config is not None:
