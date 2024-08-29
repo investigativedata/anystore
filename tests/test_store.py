@@ -18,6 +18,13 @@ def _test_store(uri: str) -> bool:
     store.put(key, "foo")
     assert store.get(key) == "foo"
     assert store.get(key, mode="r") == "foo"
+
+    store.put("seri", "HELLO", serialization_func=lambda x: x.lower().encode())
+    assert store.get("seri") == "hello"
+    assert (
+        store.pop("seri", deserialization_func=lambda x: x.decode().upper()) == "HELLO"
+    )
+
     # overwrite
     store.put(key, False)
     assert store.get(key) is False

@@ -1,5 +1,5 @@
 import orjson
-from typing import Any, Literal, TypeAlias
+from typing import Any, Callable, Literal, TypeAlias
 
 import cloudpickle
 from pydantic import BaseModel
@@ -11,8 +11,13 @@ Mode: TypeAlias = Literal["auto", "raw", "pickle", "json"]
 
 
 def to_store(
-    value: Any, serialization_mode: Mode | None = "auto", model: Model | None = None
+    value: Any,
+    serialization_mode: Mode | None = "auto",
+    serialization_func: Callable | None = None,
+    model: Model | None = None,
 ) -> bytes:
+    if serialization_func is not None:
+        return serialization_func(value)
     if model is not None:
         return value.model_dump_json().encode()
     mode = serialization_mode or "auto"
@@ -39,8 +44,11 @@ def to_store(
 def from_store(
     value: bytes,
     serialization_mode: Mode | None = "auto",
+    deserialization_func: Callable | None = None,
     model: Model | None = None,
 ) -> Any:
+    if deserialization_func is not None:
+        return deserialization_func(value)
     if model is not None:
         data = orjson.loads(value)
         return model(**data)
