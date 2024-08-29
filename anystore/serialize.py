@@ -16,10 +16,11 @@ def to_store(
     serialization_func: Callable | None = None,
     model: Model | None = None,
 ) -> bytes:
-    if serialization_func is not None:
-        return serialization_func(value)
     if model is not None:
         return value.model_dump_json().encode()
+    if serialization_func is not None:
+        value = serialization_func(value)
+
     mode = serialization_mode or "auto"
     if mode == "json":
         return orjson.dumps(value)
@@ -47,11 +48,11 @@ def from_store(
     deserialization_func: Callable | None = None,
     model: Model | None = None,
 ) -> Any:
-    if deserialization_func is not None:
-        return deserialization_func(value)
     if model is not None:
         data = orjson.loads(value)
         return model(**data)
+    if deserialization_func is not None:
+        value = deserialization_func(value)
 
     mode = serialization_mode or "auto"
     if mode == "raw":
