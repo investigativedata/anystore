@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Any, Callable, Generator
 from urllib.parse import urlparse
 
 from pydantic import field_validator
@@ -18,6 +18,8 @@ class BaseStore(BaseModel):
     uri: Uri | None = settings.uri
     scheme: str | None = None
     serialization_mode: Mode | None = settings.serialization_mode
+    serialization_func: Callable | None = None
+    deserialization_func: Callable | None = None
     model: Model | None = None
     raise_on_nonexist: bool | None = settings.raise_on_nonexist
     default_ttl: int | None = settings.default_ttl
@@ -75,10 +77,12 @@ class BaseStore(BaseModel):
         key: Uri,
         raise_on_nonexist: bool | None = None,
         serialization_mode: Mode | None = None,
+        deserialization_func: Callable | None = None,
         model: Model | None = None,
         **kwargs,
     ) -> Any:
         serialization_mode = serialization_mode or self.serialization_mode
+        deserialization_func = deserialization_func or self.deserialization_func
         model = model or self.model
         if raise_on_nonexist is None:
             raise_on_nonexist = self.raise_on_nonexist
@@ -88,6 +92,7 @@ class BaseStore(BaseModel):
             return from_store(
                 self._read(key, raise_on_nonexist, **kwargs),
                 serialization_mode,
+                deserialization_func=deserialization_func,
                 model=model,
             )
         except FileNotFoundError:  # fsspec
@@ -105,14 +110,21 @@ class BaseStore(BaseModel):
         key: Uri,
         raise_on_nonexist: bool | None = None,
         serialization_mode: Mode | None = None,
+        deserialization_func: Callable | None = None,
         model: Model | None = None,
         **kwargs,
     ) -> Generator[Any, None, None]:
         key = self.get_key(key)
+        deserialization_func = deserialization_func or self.deserialization_func
         model = model or self.model
         try:
             for line in self._stream(key, raise_on_nonexist, **kwargs):
-                yield from_store(line, serialization_mode, model=model)
+                yield from_store(
+                    line,
+                    serialization_mode,
+                    deserialization_func=deserialization_func,
+                    model=model,
+                )
         except FileNotFoundError:  # fsspec
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
@@ -123,16 +135,27 @@ class BaseStore(BaseModel):
         key: Uri,
         value: Any,
         serialization_mode: Mode | None = None,
+        serialization_func: Callable | None = None,
         model: Model | None = None,
         ttl: int | None = None,
         **kwargs,
     ):
         serialization_mode = serialization_mode or self.serialization_mode
+        serialization_func = serialization_func or self.serialization_func
         model = model or self.model
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         ttl = ttl or self.default_ttl or None
-        self._write(key, to_store(value, serialization_mode, model=model), ttl=ttl)
+        self._write(
+            key,
+            to_store(
+                value,
+                serialization_mode,
+                serialization_func=serialization_func,
+                model=model,
+            ),
+            ttl=ttl,
+        )
 
     def exists(self, key: Uri) -> bool:
         return self._exists(key)

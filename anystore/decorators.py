@@ -1,29 +1,34 @@
 import functools
-from typing import Any, Callable
+from typing import Callable, Any
 from anystore.exceptions import DoesNotExist
 from anystore.store import get_store, BaseStore
 from anystore.util import make_signature_key
 
 
-def _setup_decorator(**kwargs) -> tuple[Callable, Callable, BaseStore]:
+def _setup_decorator(**kwargs) -> tuple[Callable, BaseStore]:
     key_func: Callable = kwargs.pop("key_func", make_signature_key)
-    serialize_func: Callable = kwargs.pop("serialize_func", None)
-    store = kwargs.pop("store", get_store(**kwargs))
+    store: BaseStore = kwargs.pop("store", get_store(**kwargs))
     store = store.model_copy()
+    store.serialization_func = store.serialization_func or kwargs.pop(
+        "serialization_func", None
+    )
+    store.deserialization_func = store.deserialization_func or kwargs.pop(
+        "deserialization_func", None
+    )
     store.raise_on_nonexist = True
-    return key_func, serialize_func, store
+    return key_func, store
 
 
-def _handle_result(key: str, res: Any, serialize_func: Callable, store: BaseStore):
-    if serialize_func is not None:
-        res = serialize_func(res)
-    if key is not None:
-        store.put(key, res)
+def _handle_result(key: str, res: Any, store: BaseStore):
+    if store.serialization_func is not None:
+        res = store.serialization_func(res)
+    if key:
+        store.put(key, res, serialization_func=lambda x: x)  # already serialized
     return res
 
 
 def anycache(func=None, **store_kwargs):
-    key_func, serialize_func, store = _setup_decorator(**store_kwargs)
+    key_func, store = _setup_decorator(**store_kwargs)
 
     def _decorator(func):
         @functools.wraps(func)
@@ -35,7 +40,7 @@ def anycache(func=None, **store_kwargs):
                 raise DoesNotExist
             except DoesNotExist:
                 res = func(*args, **kwargs)
-                return _handle_result(key, res, serialize_func, store)
+                return _handle_result(key, res, store)
 
         return _inner
 
@@ -45,7 +50,7 @@ def anycache(func=None, **store_kwargs):
 
 
 def async_anycache(func=None, **store_kwargs):
-    key_func, serialize_func, store = _setup_decorator(**store_kwargs)
+    key_func, store = _setup_decorator(**store_kwargs)
 
     def _decorator(func):
         @functools.wraps(func)
@@ -57,7 +62,7 @@ def async_anycache(func=None, **store_kwargs):
                 raise DoesNotExist
             except DoesNotExist:
                 res = await func(*args, **kwargs)
-                return _handle_result(key, res, serialize_func, store)
+                return _handle_result(key, res, store)
 
         return _inner
 

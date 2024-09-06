@@ -64,3 +64,9 @@ def test_serialize():
     # mode: raw
     assert serialize.to_store("str value", serialization_mode="raw") == "str value"
     assert serialize.from_store(b"str value", serialization_mode="raw") == b"str value"
+
+    # explicit de-/serialization
+    assert (
+        serialize.to_store("value", serialization_func=lambda x: x.encode()) == b"value"
+    )
+    assert serialize.from_store(b"1", deserialization_func=int) == 1

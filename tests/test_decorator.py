@@ -34,7 +34,7 @@ def test_decorator(tmp_path):
     assert (tmp_path / "foo" / "bar").exists()
 
     # custom serialize function
-    @anycache(uri=tmp_path, serialize_func=list)
+    @anycache(uri=tmp_path, serialization_func=list)
     def get_data4(x):
         yield from range(x)
 
