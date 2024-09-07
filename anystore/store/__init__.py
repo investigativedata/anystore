@@ -5,6 +5,7 @@ from anystore.logging import get_logger
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
 from anystore.store.fs import Store
+from anystore.store.memory import MemoryStore
 from anystore.util import ensure_uri
 
 
@@ -25,6 +26,8 @@ def get_store(settings: Settings | None = None, **kwargs) -> BaseStore:
         uri = settings.uri
     uri = ensure_uri(uri)
     parsed = urlparse(uri)
+    if parsed.scheme == "memory":
+        return MemoryStore(uri=uri)
     if parsed.scheme == "redis":
         try:
             from anystore.store.redis import RedisStore
@@ -42,4 +45,4 @@ def get_store(settings: Settings | None = None, **kwargs) -> BaseStore:
     return Store(**kwargs)
 
 
-__all__ = ["get_store", "Store", "RedisStore", "SqlStore"]
+__all__ = ["get_store", "Store", "MemoryStore"]

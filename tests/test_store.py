@@ -5,6 +5,7 @@ import pytest
 from anystore.exceptions import DoesNotExist
 from anystore.store import Store, get_store
 from anystore.store.base import BaseStore
+from anystore.store.memory import MemoryStore
 from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
 from tests.conftest import setup_s3
@@ -42,7 +43,7 @@ def _test_store(uri: str) -> bool:
     # iterate
     keys = [k for k in store.iterate_keys()]
     assert len(keys) == 3
-    # assert all(store.exists(k) for k in keys)
+    assert all(store.exists(k) for k in keys)
     keys = [k for k in store.iterate_keys("foo")]
     assert keys[0] == "foo/bar/baz"
     assert len(keys) == 1
@@ -56,7 +57,7 @@ def _test_store(uri: str) -> bool:
     assert store.get("popped", raise_on_nonexist=False) is None
 
     # ttl
-    if isinstance(store, (RedisStore, SqlStore)):
+    if isinstance(store, (RedisStore, SqlStore, MemoryStore)):
         store.put("expired", 1, ttl=1)
         assert store.get("expired") == 1
         time.sleep(1)
@@ -77,6 +78,10 @@ def test_store_redis():
 
 def test_store_sql(tmp_path):
     assert _test_store(f"sqlite:///{tmp_path}/db.sqlite")
+
+
+def test_store_memory():
+    assert _test_store("memory:///")
 
 
 def test_store_fs(tmp_path, fixtures_path):
@@ -115,3 +120,4 @@ def test_store_intialize(fixtures_path):
     assert store.uri == "file:///tmp/cache"
 
     store = Store(uri="s3://anystore", raise_on_nonexist=False)
+    assert store.raise_on_nonexist is False
