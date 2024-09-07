@@ -26,7 +26,7 @@ from sqlalchemy.engine import Connection, Engine
 from anystore.exceptions import DoesNotExist
 from anystore.settings import SqlSettings
 from anystore.store.base import BaseStore
-from anystore.types import Uri, Value
+from anystore.types import Value
 
 
 settings = SqlSettings()
@@ -97,8 +97,7 @@ class SqlStore(BaseStore):
         self._conn = engine.connect()
         self._sqlite = "sqlite" in engine.name.lower()
 
-    def _write(self, key: Uri, value: Value, **kwargs) -> None:
-        key = str(key)
+    def _write(self, key: str, value: Value, **kwargs) -> None:
         ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
         exists = select(self._table).where(self._table.c.key == key)
@@ -114,9 +113,8 @@ class SqlStore(BaseStore):
         self._conn.commit()
 
     def _read(
-        self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs
+        self, key: str, raise_on_nonexist: bool | None = True, **kwargs
     ) -> Value | None:
-        key = str(key)
         stmt = select(self._table).where(self._table.c.key == key)
         res = self._conn.execute(stmt).first()
         if res:
@@ -133,16 +131,14 @@ class SqlStore(BaseStore):
         if raise_on_nonexist:
             raise DoesNotExist
 
-    def _exists(self, key: Uri) -> bool:
-        key = str(key)
+    def _exists(self, key: str) -> bool:
         stmt = select(self._table).where(self._table.c.key == key)
         stmt = select(stmt.exists())
         for res in self._conn.execute(stmt).first():
             return bool(res)
         return False
 
-    def _delete(self, key: Uri) -> None:
-        key = str(key)
+    def _delete(self, key: str) -> None:
         stmt = delete(self._table).where(self._table.c.key == key)
         self._conn.execute(stmt)
 

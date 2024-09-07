@@ -30,31 +30,31 @@ class BaseStore(BaseModel):
         data["scheme"] = urlparse(str(uri)).scheme
         super().__init__(**data)
 
-    def _write(self, key: Uri, value: Value, **kwargs) -> None:
+    def _write(self, key: str, value: Value, **kwargs) -> None:
         """
         Write value with key to acutal backend
         """
         raise NotImplementedError
 
-    def _read(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
+    def _read(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         """
         Read key from actual backend
         """
         raise NotImplementedError
 
-    def _delete(self, key: Uri) -> None:
+    def _delete(self, key: str) -> None:
         """
         Delete key from actual backend
         """
         raise NotImplementedError
 
-    def _stream(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
+    def _stream(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         """
         Stream key line by line from actual backend (for file-like powered backend)
         """
         raise NotImplementedError
 
-    def _exists(self, key: Uri) -> bool:
+    def _exists(self, key: str) -> bool:
         """
         Check if the given key exists
         """
@@ -102,7 +102,7 @@ class BaseStore(BaseModel):
 
     def pop(self, key: Uri, *args, **kwargs) -> Any:
         value = self.get(key, *args, **kwargs)
-        self._delete(key)
+        self._delete(self.get_key(key))
         return value
 
     def stream(
@@ -158,7 +158,7 @@ class BaseStore(BaseModel):
         )
 
     def exists(self, key: Uri) -> bool:
-        return self._exists(key)
+        return self._exists(self.get_key(key))
 
     def ensure_kwargs(self, **kwargs) -> dict[str, Any]:
         config = clean_dict(self.backend_config)

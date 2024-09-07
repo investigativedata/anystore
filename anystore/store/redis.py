@@ -2,30 +2,26 @@
 Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
-from typing import Any, Generator, TYPE_CHECKING
 from functools import cache
+from typing import Any, Generator
 
+import fakeredis
 import redis
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.settings import Settings
 from anystore.store.base import BaseStore
-from anystore.types import Uri, Value
-
-if TYPE_CHECKING:
-    import fakeredis
+from anystore.types import Value
 
 
 log = get_logger(__name__)
 
 
 @cache
-def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
+def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
     settings = Settings()
     if settings.redis_debug:
-        import fakeredis
-
         con = fakeredis.FakeStrictRedis()
         con.ping()
         log.info("Redis connected: `fakeredis`")
@@ -37,32 +33,31 @@ def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
 
 
 class RedisStore(BaseStore):
-    def _write(self, key: Uri, value: Value, **kwargs) -> None:
+    def _write(self, key: str, value: Value, **kwargs) -> None:
         ttl = kwargs.pop("ttl", None) or None
         con = get_redis(self.uri)
-        con.set(str(key), value, ex=ttl, **kwargs)
+        con.set(key, value, ex=ttl, **kwargs)
 
-    def _read(self, key: Uri, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
+    def _read(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
         con = get_redis(self.uri)
-        key = str(key)
         # `None` could be stored as an actual value, to implement `raise_on_nonexist`
         # we need to check this first:
         if raise_on_nonexist and not con.exists(key):
             raise DoesNotExist
-        res = con.get(str(key))
+        res = con.get(key)
         # mimic fs read mode:
         if kwargs.get("mode") == "r" and isinstance(res, bytes):
             res = res.decode()
         return res
 
-    def _exists(self, key: Uri) -> bool:
+    def _exists(self, key: str) -> bool:
         con = get_redis(self.uri)
-        res = con.exists(self.get_key(key))
+        res = con.exists(key)
         return bool(res)
 
-    def _delete(self, key: Uri) -> None:
+    def _delete(self, key: str) -> None:
         con = get_redis(self.uri)
-        con.delete(self.get_key(key))
+        con.delete(key)
 
     def _get_key_prefix(self) -> str:
         if self.backend_config is not None:
