@@ -111,6 +111,9 @@ class BaseStore(BaseModel):
         self._delete(self.get_key(key))
         return value
 
+    def delete(self, key: Uri) -> None:
+        self._delete(self.get_key(key))
+
     def stream(
         self,
         key: Uri,

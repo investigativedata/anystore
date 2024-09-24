@@ -58,6 +58,12 @@ def _test_store(fixtures_path, uri: str) -> bool:
     assert store.pop("popped") == 1
     assert store.get("popped", raise_on_nonexist=False) is None
 
+    # delete
+    store.put("to_delete", 1)
+    assert store.exists("to_delete")
+    store.delete("to_delete")
+    assert not store.exists("to_delete")
+
     # ttl
     if isinstance(store, (RedisStore, SqlStore, MemoryStore)):
         store.put("expired", 1, ttl=1)
