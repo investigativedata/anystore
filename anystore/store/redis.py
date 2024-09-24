@@ -3,7 +3,8 @@ Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
 from functools import cache
-from typing import Any, Generator
+from typing import Any, Generator, BinaryIO
+from io import BytesIO
 
 import fakeredis
 import redis
@@ -71,3 +72,8 @@ class RedisStore(BaseStore):
         for key in con.scan_iter(prefix):
             key = key.decode()
             yield key[len(key_prefix) + 1 :]
+
+    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+        kwargs["mode"] = "rb"
+        content = self._read(key, **kwargs)
+        return BytesIO(content)

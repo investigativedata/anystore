@@ -13,7 +13,7 @@ from anystore.store.virtual import get_virtual
 from tests.conftest import setup_s3
 
 
-def _test_store(uri: str) -> bool:
+def _test_store(fixtures_path, uri: str) -> bool:
     # generic store test
     store = get_store(uri=uri)
     assert isinstance(store, BaseStore)
@@ -65,29 +65,37 @@ def _test_store(uri: str) -> bool:
         time.sleep(1)
         assert store.get("expired", raise_on_nonexist=False) is None
 
+    # checksum
+    md5sum = "6d484beb4162b026abc7cfea019acbd1"
+    sha1sum = "ed3141878ed32d8a1d583e7ce7de323118b933d3"
+    lorem = smart_read(fixtures_path / "lorem.txt")
+    store.put("lorem", lorem)
+    assert store.checksum("lorem") == md5sum
+    assert store.checksum("lorem", "sha1") == sha1sum
+
     return True
 
 
 @mock_aws
-def test_store_s3():
+def test_store_s3(fixtures_path):
     setup_s3()
-    assert _test_store("s3://anystore")
+    assert _test_store(fixtures_path, "s3://anystore")
 
 
-def test_store_redis():
-    assert _test_store("redis:///localhost")
+def test_store_redis(fixtures_path):
+    assert _test_store(fixtures_path, "redis:///localhost")
 
 
-def test_store_sql(tmp_path):
-    assert _test_store(f"sqlite:///{tmp_path}/db.sqlite")
+def test_store_sql(fixtures_path, tmp_path):
+    assert _test_store(fixtures_path, f"sqlite:///{tmp_path}/db.sqlite")
 
 
-def test_store_memory():
-    assert _test_store("memory:///")
+def test_store_memory(fixtures_path):
+    assert _test_store(fixtures_path, "memory:///")
 
 
 def test_store_fs(tmp_path, fixtures_path):
-    assert _test_store(tmp_path)
+    assert _test_store(fixtures_path, tmp_path)
 
     # don't pickle "external" data
     store = Store(uri=fixtures_path)

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generator
+from typing import Any, BinaryIO, Callable, Generator
 from urllib.parse import urlparse
 
 from pydantic import field_validator
@@ -8,7 +8,7 @@ from anystore.mixins import BaseModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
 from anystore.types import Uri, Value, Model
-from anystore.util import clean_dict, ensure_uri
+from anystore.util import clean_dict, ensure_uri, make_checksum
 
 
 settings = Settings()
@@ -69,6 +69,12 @@ class BaseStore(BaseModel):
     def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         """
         Backend specific key iterator
+        """
+        raise NotImplementedError
+
+    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+        """
+        Get a bytes io handler
         """
         raise NotImplementedError
 
@@ -169,6 +175,12 @@ class BaseStore(BaseModel):
 
     def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         yield from self._iterate_keys(prefix)
+
+    def checksum(self, key: Uri, algorithm: str | None = "md5", **kwargs) -> BinaryIO:
+        kwargs = self.ensure_kwargs(**kwargs)
+        key = self.get_key(key)
+        with self._bytes_io(key, **kwargs) as io:
+            return make_checksum(io, algorithm)
 
     @field_validator("uri", mode="before")
     @classmethod

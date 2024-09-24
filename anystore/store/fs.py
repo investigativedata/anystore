@@ -2,12 +2,12 @@
 Store backend using any file-like location usable via `fsspec`
 """
 
-from typing import Generator
+from typing import Generator, BinaryIO
 
 import fsspec
 from banal import ensure_dict
 
-from anystore.io import smart_read, smart_stream, smart_write
+from anystore.io import smart_open, smart_read, smart_stream, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStore
 from anystore.types import Value
@@ -47,6 +47,9 @@ class Store(BaseStore):
 
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")
+
+    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+        return smart_open(key, **kwargs)
 
     def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         path = self.get_key(prefix or "")

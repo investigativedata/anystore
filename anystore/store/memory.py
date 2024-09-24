@@ -3,7 +3,8 @@ Simple memory dictionary store
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Generator
+from io import BytesIO
+from typing import Any, Generator, BinaryIO
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
@@ -59,3 +60,8 @@ class MemoryStore(BaseStore):
         ttl = self._ttl.get(key)
         if ttl and datetime.now() > ttl:
             self._delete(key)
+
+    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+        kwargs["mode"] = "rb"
+        content = self._read(key, **kwargs)
+        return BytesIO(content)

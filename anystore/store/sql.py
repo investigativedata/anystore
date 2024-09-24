@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from functools import cache
-from typing import Generator, Optional, Union
+from typing import Generator, Optional, Union, BinaryIO
+from io import BytesIO
 
 from banal import ensure_dict
 from sqlalchemy import (
@@ -159,3 +160,8 @@ class SqlStore(BaseStore):
             while rows := cursor.fetchmany(10_000):
                 for row in rows:
                     yield row[0]
+
+    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+        kwargs["mode"] = "rb"
+        content = self._read(key, **kwargs)
+        return BytesIO(content)
