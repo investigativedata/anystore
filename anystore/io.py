@@ -1,3 +1,4 @@
+from os import PathLike
 import contextlib
 from pathlib import Path
 import sys
@@ -14,7 +15,7 @@ log = get_logger(__name__)
 DEFAULT_MODE = "rb"
 DEFAULT_WRITE_MODE = "wb"
 
-Uri: TypeAlias = Path | BinaryIO | TextIO | str
+Uri: TypeAlias = PathLike | Path | BinaryIO | TextIO | str
 
 
 def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:

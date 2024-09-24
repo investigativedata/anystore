@@ -3,11 +3,13 @@ from moto import mock_aws
 import pytest
 
 from anystore.exceptions import DoesNotExist
+from anystore.io import smart_read
 from anystore.store import Store, get_store
 from anystore.store.base import BaseStore
 from anystore.store.memory import MemoryStore
 from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
+from anystore.store.virtual import get_virtual
 from tests.conftest import setup_s3
 
 
@@ -121,3 +123,14 @@ def test_store_intialize(fixtures_path):
 
     store = Store(uri="s3://anystore", raise_on_nonexist=False)
     assert store.raise_on_nonexist is False
+
+
+def test_store_virtual(fixtures_path):
+    lorem = smart_read(fixtures_path / "lorem.txt")
+    tmp = get_virtual()
+    key = tmp.download(fixtures_path / "lorem.txt")
+    assert tmp.store.pop(key) == lorem
+
+    store = get_store(uri=fixtures_path)
+    key = tmp.download("lorem.txt", store)
+    assert tmp.store.pop(key) == lorem
