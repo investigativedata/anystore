@@ -176,7 +176,7 @@ class BaseStore(BaseModel):
     def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         yield from self._iterate_keys(prefix)
 
-    def checksum(self, key: Uri, algorithm: str | None = "md5", **kwargs) -> BinaryIO:
+    def checksum(self, key: Uri, algorithm: str | None = "md5", **kwargs) -> str:
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         with self._bytes_io(key, **kwargs) as io:
