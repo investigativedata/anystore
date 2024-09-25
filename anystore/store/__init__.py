@@ -15,7 +15,7 @@ log = get_logger(__name__)
 @cache
 def get_store(settings: Settings | None = None, **kwargs) -> BaseStore:
     settings = settings or Settings()
-    uri = kwargs.get("uri")
+    uri = kwargs.pop("uri", None)
     if uri is None:
         if settings.yaml_uri is not None:
             store = BaseStore.from_yaml_uri(settings.yaml_uri, **kwargs)
@@ -27,22 +27,22 @@ def get_store(settings: Settings | None = None, **kwargs) -> BaseStore:
     uri = ensure_uri(uri)
     parsed = urlparse(uri)
     if parsed.scheme == "memory":
-        return MemoryStore(uri=uri)
+        return MemoryStore(uri=uri, **kwargs)
     if parsed.scheme == "redis":
         try:
             from anystore.store.redis import RedisStore
 
-            return RedisStore(**kwargs)
+            return RedisStore(uri=uri, **kwargs)
         except ImportError:
             log.error("Install redis dependencies via `anystore[redis]`")
     if "sql" in parsed.scheme:
         try:
             from anystore.store.sql import SqlStore
 
-            return SqlStore(**kwargs)
+            return SqlStore(uri=uri, **kwargs)
         except ImportError:
             log.error("Install sql dependencies via `anystore[sql]`")
-    return Store(**kwargs)
+    return Store(uri=uri, **kwargs)
 
 
 __all__ = ["get_store", "Store", "MemoryStore"]
