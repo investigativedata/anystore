@@ -26,7 +26,7 @@ from sqlalchemy.engine import Connection, Engine
 
 from anystore.exceptions import DoesNotExist
 from anystore.settings import SqlSettings
-from anystore.store.base import BaseStore
+from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value
 
 
@@ -139,6 +139,14 @@ class SqlStore(BaseStore):
         for res in self._conn.execute(stmt).first():
             return bool(res)
         return False
+
+    def _info(self, key: str) -> BaseStats:
+        stmt = select(self._table).where(self._table.c.key == key)
+        res = self._conn.execute(stmt).first()
+        if res:
+            key, value, ts, ttl = res
+            return BaseStats(created_at=ts, size=len(value))
+        raise DoesNotExist
 
     def _delete(self, key: str) -> None:
         stmt = delete(self._table).where(self._table.c.key == key)

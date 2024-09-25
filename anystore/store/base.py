@@ -1,3 +1,5 @@
+from datetime import datetime
+from pathlib import Path
 from typing import Any, BinaryIO, Callable, Generator
 from urllib.parse import urljoin, urlparse
 
@@ -12,6 +14,19 @@ from anystore.util import clean_dict, ensure_uri, make_checksum
 
 
 settings = Settings()
+
+
+class BaseStats(BaseModel):
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    size: int
+
+
+class Stats(BaseStats):
+    name: str
+    store: str
+    path: str
+    key: str
 
 
 class BaseStore(BaseModel):
@@ -58,6 +73,12 @@ class BaseStore(BaseModel):
     def _exists(self, key: str) -> bool:
         """
         Check if the given key exists
+        """
+        raise NotImplementedError
+
+    def _info(self, key: str) -> BaseStats:
+        """
+        Get metadata about key and its value
         """
         raise NotImplementedError
 
@@ -169,6 +190,16 @@ class BaseStore(BaseModel):
 
     def exists(self, key: Uri) -> bool:
         return self._exists(self.get_key(key))
+
+    def info(self, key: Uri) -> Stats:
+        stats = self._info(self.get_key(key))
+        return Stats(
+            **stats.model_dump(),
+            name=Path(str(key)).name,
+            store=str(self.uri),
+            path=self.get_key(key),
+            key=str(key),
+        )
 
     def ensure_kwargs(self, **kwargs) -> dict[str, Any]:
         config = clean_dict(self.backend_config)

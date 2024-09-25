@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 from moto import mock_aws
 import pytest
@@ -79,7 +80,21 @@ def _test_store(fixtures_path, uri: str) -> bool:
     assert store.checksum("lorem") == md5sum
     assert store.checksum("lorem", "sha1") == sha1sum
 
-    # path-like
+    # info (stats)
+    store.delete("lorem")
+    store.put("lorem/ipsum.pdf", lorem)
+    info = store.info("lorem/ipsum.pdf")
+    assert info.name == "ipsum.pdf"
+    assert info.store == store.uri
+    assert info.key == "lorem/ipsum.pdf"
+    assert info.path == store.get_key("lorem/ipsum.pdf")
+    assert info.size == 296
+    if info.created_at is not None:
+        assert info.created_at.date() == datetime.now().date()
+    if info.updated_at is not None:
+        assert info.updated_at.date() == datetime.now().date()
+
+    # path-like inheritance
     if not isinstance(store, MemoryStore):
         new_store = store / "child-path"
         new_store.put("foo", "bar")

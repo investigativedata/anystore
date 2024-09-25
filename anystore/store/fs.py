@@ -2,6 +2,7 @@
 Store backend using any file-like location usable via `fsspec`
 """
 
+from datetime import datetime
 from typing import Generator, BinaryIO
 
 import fsspec
@@ -9,7 +10,7 @@ from banal import ensure_dict
 
 from anystore.io import smart_open, smart_read, smart_stream, smart_write
 from anystore.exceptions import DoesNotExist
-from anystore.store.base import BaseStore
+from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value
 from anystore.util import join_uri
 
@@ -20,6 +21,7 @@ class Store(BaseStore):
         if prefix:
             data["uri"] = join_uri(data["uri"], prefix)
         super().__init__(**data)
+        self._fs = fsspec.url_to_fs(self.uri)[0]
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         kwargs.pop("ttl", None)
@@ -45,12 +47,18 @@ class Store(BaseStore):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
 
     def _exists(self, key: str) -> bool:
-        fs = fsspec.filesystem(self.scheme)
-        return fs.exists(key)
+        return self._fs.exists(key)
+
+    def _info(self, key: str) -> BaseStats:
+        data = self._fs.info(key)
+        ts = data.pop("created", None)
+        data["updated_at"] = data.pop("LastModified", None)  # s3
+        if ts:
+            data["created_at"] = datetime.fromtimestamp(ts)
+        return BaseStats(**data)
 
     def _delete(self, key: str) -> None:
-        fs = fsspec.filesystem(self.scheme)
-        fs.delete(key)
+        self._fs.delete(key)
 
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")

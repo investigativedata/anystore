@@ -12,7 +12,7 @@ import redis
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.settings import Settings
-from anystore.store.base import BaseStore
+from anystore.store.base import BaseStore, BaseStats
 from anystore.types import Value
 
 
@@ -34,31 +34,35 @@ def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
 
 
 class RedisStore(BaseStore):
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._con = get_redis(self.uri)
+
     def _write(self, key: str, value: Value, **kwargs) -> None:
         ttl = kwargs.pop("ttl", None) or None
-        con = get_redis(self.uri)
-        con.set(key, value, ex=ttl, **kwargs)
+        self._con.set(key, value, ex=ttl, **kwargs)
 
     def _read(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
-        con = get_redis(self.uri)
         # `None` could be stored as an actual value, to implement `raise_on_nonexist`
         # we need to check this first:
-        if raise_on_nonexist and not con.exists(key):
+        if raise_on_nonexist and not self._con.exists(key):
             raise DoesNotExist
-        res = con.get(key)
+        res = self._con.get(key)
         # mimic fs read mode:
         if kwargs.get("mode") == "r" and isinstance(res, bytes):
             res = res.decode()
         return res
 
     def _exists(self, key: str) -> bool:
-        con = get_redis(self.uri)
-        res = con.exists(key)
+        res = self._con.exists(key)
         return bool(res)
 
+    def _info(self, key: str) -> BaseStats:
+        data = self._read(key)
+        return BaseStats(size=len(data))
+
     def _delete(self, key: str) -> None:
-        con = get_redis(self.uri)
-        con.delete(key)
+        self._con.delete(key)
 
     def _get_key_prefix(self) -> str:
         if self.backend_config is not None:
@@ -66,10 +70,9 @@ class RedisStore(BaseStore):
         return "anystore"
 
     def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        con = get_redis(self.uri)
         prefix = self.get_key(prefix or "") + "*"
         key_prefix = self._get_key_prefix()
-        for key in con.scan_iter(prefix):
+        for key in self._con.scan_iter(prefix):
             key = key.decode()
             yield key[len(key_prefix) + 1 :]
 

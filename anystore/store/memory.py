@@ -8,7 +8,7 @@ from typing import Any, Generator, BinaryIO
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
-from anystore.store.base import BaseStore
+from anystore.store.base import BaseStore, BaseStats
 from anystore.types import Value, Uri
 
 
@@ -42,6 +42,11 @@ class MemoryStore(BaseStore):
     def _exists(self, key: str) -> bool:
         self._check_ttl(key)
         return key in self._store
+
+    def _info(self, key: str) -> BaseStats:
+        self._check_ttl(key)
+        data = self._read(key)
+        return BaseStats(size=len(data))
 
     def _delete(self, key: str) -> None:
         self._store.pop(key, None)
