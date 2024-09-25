@@ -147,4 +147,8 @@ def test_store_virtual(fixtures_path):
 
     store = get_store(uri=fixtures_path)
     key = tmp.download("lorem.txt", store)
-    assert tmp.store.pop(key) == lorem
+    assert tmp.store.get(key) == lorem
+
+    assert tmp.store.exists(key)
+    tmp.cleanup()
+    assert not tmp.store.exists(key)
