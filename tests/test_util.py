@@ -32,6 +32,15 @@ def test_util_ensure_uri():
         assert util.ensure_uri(" ")
 
 
+def test_util_join_uri():
+    assert util.join_uri("http://example.org", "foo") == "http://example.org/foo"
+    assert util.join_uri("http://example.org/", "foo") == "http://example.org/foo"
+    assert util.join_uri("/tmp", "foo") == "file:///tmp/foo"
+    assert util.join_uri(Path("./foo"), "bar").startswith("file:///")
+    assert util.join_uri(Path("./foo"), "bar").endswith("foo/bar")
+    assert util.join_uri("s3://foo/bar.pdf", "../baz.txt") == "s3://foo/baz.txt"
+
+
 def test_util_checksum():
     assert util.make_data_checksum("stable") == "a26dc899771c9e8503618745c4842c7d"
     assert len(util.make_data_checksum("a")) == 32

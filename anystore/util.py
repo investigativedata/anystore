@@ -2,7 +2,7 @@ from io import BytesIO
 import hashlib
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
 from banal import is_mapping
@@ -42,6 +42,17 @@ def ensure_uri(uri: Any) -> str:
     if parsed.scheme:
         return uri
     return Path(uri).absolute().as_uri()
+
+
+def join_uri(uri: Any, path: str) -> str:
+    # FIXME wtf
+    uri = ensure_uri(uri)
+    if not uri or uri == "-":
+        raise ValueError(f"Invalid uri: `{uri}`")
+    uri += "/"
+    scheme, *parts = urlsplit(uri)
+    _, *parts = urlsplit(urljoin(urlunsplit(["http", *parts]), path))
+    return urlunsplit([scheme, *parts])
 
 
 def make_checksum(io: BytesIO, algorithm: str = "md5") -> str:
