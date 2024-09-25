@@ -1,5 +1,5 @@
 from typing import Any, BinaryIO, Callable, Generator
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from pydantic import field_validator
 
@@ -16,6 +16,7 @@ settings = Settings()
 
 class BaseStore(BaseModel):
     uri: Uri | None = settings.uri
+    prefix: str = ""
     scheme: str | None = None
     serialization_mode: Mode | None = settings.serialization_mode
     serialization_func: Callable | None = None
@@ -26,7 +27,7 @@ class BaseStore(BaseModel):
     backend_config: dict[str, Any] | None = None
 
     def __init__(self, **data):
-        uri = data.get("uri", settings.uri)
+        uri = data.get("uri") or settings.uri
         data["scheme"] = urlparse(str(uri)).scheme
         super().__init__(**data)
 
@@ -174,6 +175,8 @@ class BaseStore(BaseModel):
         return {**config, **clean_dict(kwargs)}
 
     def get_key(self, key: Uri) -> str:
+        if self.prefix:
+            return f"{self._get_key_prefix()}/{self.prefix}/{str(key)}".strip("/")
         return f"{self._get_key_prefix()}/{str(key)}".strip("/")
 
     def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
@@ -184,6 +187,20 @@ class BaseStore(BaseModel):
         key = self.get_key(key)
         with self._bytes_io(key, **kwargs) as io:
             return make_checksum(io, algorithm)
+
+    def __truediv__(self, prefix: Uri) -> "BaseStore":
+        """
+        Returns a new store, like:
+            store = Store(uri="foo")
+            new_store = store / "bar"
+            assert new_store.uri == "foo/bar"
+        """
+        prefix = str(prefix).lstrip("/")
+        if self.prefix:
+            prefix = urljoin(self.prefix + "/", prefix)
+        if prefix.startswith(".."):
+            raise ValueError(f"Invalid path: `{prefix}`")
+        return self.__class__(**{**self.model_dump(), "prefix": prefix})
 
     @field_validator("uri", mode="before")
     @classmethod

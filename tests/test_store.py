@@ -79,6 +79,15 @@ def _test_store(fixtures_path, uri: str) -> bool:
     assert store.checksum("lorem") == md5sum
     assert store.checksum("lorem", "sha1") == sha1sum
 
+    # path-like
+    if not isinstance(store, MemoryStore):
+        new_store = store / "child-path"
+        new_store.put("foo", "bar")
+        assert store.get("child-path/foo") == "bar"
+    else:
+        with pytest.raises(NotImplementedError):
+            store / "child-path"
+
     return True
 
 

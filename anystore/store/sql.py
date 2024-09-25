@@ -73,6 +73,7 @@ def make_table(name: str, metadata: MetaData) -> Table:
             server_default=func.now(),
         ),
         Column("ttl", Integer(), nullable=True),
+        extend_existing=True,  # FIXME?
     )
 
 

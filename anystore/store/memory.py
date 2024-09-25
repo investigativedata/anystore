@@ -9,7 +9,7 @@ from typing import Any, Generator, BinaryIO
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.store.base import BaseStore
-from anystore.types import Value
+from anystore.types import Value, Uri
 
 
 log = get_logger(__name__)
@@ -65,3 +65,6 @@ class MemoryStore(BaseStore):
         kwargs["mode"] = "rb"
         content = self._read(key, **kwargs)
         return BytesIO(content)
+
+    def __truediv__(self, prefix: Uri) -> "BaseStore":
+        raise NotImplementedError

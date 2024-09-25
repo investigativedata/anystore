@@ -11,9 +11,16 @@ from anystore.io import smart_open, smart_read, smart_stream, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStore
 from anystore.types import Value
+from anystore.util import join_uri
 
 
 class Store(BaseStore):
+    def __init__(self, **data):
+        prefix = data.pop("prefix", None)
+        if prefix:
+            data["uri"] = join_uri(data["uri"], prefix)
+        super().__init__(**data)
+
     def _write(self, key: str, value: Value, **kwargs) -> None:
         kwargs.pop("ttl", None)
         smart_write(key, value, **kwargs)
