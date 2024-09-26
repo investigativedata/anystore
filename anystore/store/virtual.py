@@ -4,10 +4,7 @@ from anystore.types import Uri
 from anystore.store.base import BaseStore
 import shortuuid
 import tempfile
-from functools import cached_property
-import threading
 from anystore.store import get_store
-from anystore.store.fs import Store
 
 
 class VirtualStore:
@@ -16,14 +13,8 @@ class VirtualStore:
     """
 
     def __init__(self) -> None:
-        self.local = threading.local()
-
-    @cached_property
-    def store(self) -> Store:
-        if not hasattr(self.local, "store"):
-            self.local.dir = tempfile.mkdtemp(prefix="leakrfc-")
-            self.local.store = get_store(uri=self.local.dir, serialization_mode="raw")
-        return self.local.store
+        self.path = tempfile.mkdtemp(prefix="leakrfc-")
+        self.store = get_store(uri=self.path, serialization_mode="raw")
 
     def download(self, uri: Uri, store: BaseStore | None = None) -> str:
         key = shortuuid.uuid()
@@ -38,7 +29,7 @@ class VirtualStore:
 
     def cleanup(self) -> None:
         try:
-            shutil.rmtree(self.local.dir, ignore_errors=True)
+            shutil.rmtree(self.path, ignore_errors=True)
         except Exception:
             pass
 
