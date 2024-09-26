@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, BinaryIO, Callable, Generator
+from typing import Any, BinaryIO, Callable, Generator, Optional
 from urllib.parse import urljoin, urlparse
 
 from pydantic import field_validator
@@ -31,7 +31,7 @@ class Stats(BaseStats):
 
 class BaseStore(BaseModel):
     uri: Uri | None = settings.uri
-    prefix: str = ""
+    prefix: Optional[str] = ""
     scheme: str | None = None
     serialization_mode: Mode | None = settings.serialization_mode
     serialization_func: Callable | None = None
@@ -238,3 +238,8 @@ class BaseStore(BaseModel):
     def ensure_uri(cls, v: Any) -> str:
         uri = ensure_uri(v)
         return uri.rstrip("/")
+
+    @field_validator("prefix", mode="before")
+    @classmethod
+    def ensure_prefix(cls, v: Any) -> str:
+        return str(v or "").rstrip("/")
