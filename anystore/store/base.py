@@ -10,7 +10,7 @@ from anystore.mixins import BaseModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
 from anystore.types import Uri, Value, Model
-from anystore.util import clean_dict, ensure_uri, make_checksum
+from anystore.util import clean_dict, ensure_uri, join_uri, make_checksum
 
 
 settings = Settings()
@@ -19,7 +19,7 @@ settings = Settings()
 class BaseStats(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
-    size: int
+    size: int | None = None
 
 
 class Stats(BaseStats):
@@ -27,6 +27,14 @@ class Stats(BaseStats):
     store: str
     path: str
     key: str
+
+    @property
+    def uri(self) -> str:
+        if self.store.startswith("file"):
+            return self.path
+        if self.store.startswith("http"):
+            return self.path
+        return join_uri(self.store, self.path)
 
 
 class BaseStore(BaseModel):
