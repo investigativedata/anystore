@@ -219,6 +219,12 @@ class BaseStore(BaseModel):
         with self._bytes_io(key, **kwargs) as io:
             return make_checksum(io, algorithm)
 
+    def stream_bytes(self, key: Uri, **kwargs) -> Any:
+        kwargs = self.ensure_kwargs(**kwargs)
+        key = self.get_key(key)
+        with self._bytes_io(key, **kwargs) as io:
+            yield from io
+
     def __truediv__(self, prefix: Uri) -> "BaseStore":
         """
         Returns a new store, like:
