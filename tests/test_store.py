@@ -11,10 +11,12 @@ from anystore.store.memory import MemoryStore
 from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
 from anystore.store.virtual import get_virtual
+from anystore.store.zip import ZipStore
 from tests.conftest import setup_s3
 
 
 def _test_store(fixtures_path, uri: str) -> bool:
+    # import ipdb; ipdb.set_trace()
     # generic store test
     store = get_store(uri=uri)
     assert isinstance(store, BaseStore)
@@ -124,6 +126,10 @@ def test_store_memory(fixtures_path):
     assert _test_store(fixtures_path, "memory:///")
 
 
+def test_store_zip(tmp_path, fixtures_path):
+    assert _test_store(fixtures_path, tmp_path / "store.zip")
+
+
 def test_store_fs(tmp_path, fixtures_path):
     assert _test_store(fixtures_path, tmp_path)
 
@@ -149,7 +155,7 @@ def test_store_fs(tmp_path, fixtures_path):
     assert tested
 
 
-def test_store_intialize(fixtures_path):
+def test_store_initialize(fixtures_path):
     # initialize (take env vars into account)
     get_store.cache_clear()
     store = get_store()
@@ -161,6 +167,21 @@ def test_store_intialize(fixtures_path):
 
     store = Store(uri="s3://anystore", raise_on_nonexist=False)
     assert store.raise_on_nonexist is False
+
+    # store implementations
+    assert isinstance(get_store("memory://"), MemoryStore)
+    assert isinstance(get_store(), Store)
+    assert isinstance(get_store("./data"), Store)
+    assert isinstance(get_store("/data"), Store)
+    assert isinstance(get_store("file:///data"), Store)
+    assert isinstance(get_store("s3://bucket"), Store)
+    # assert isinstance(get_store("gcs://bucket"), Store)
+    assert isinstance(get_store("http://example.org/files"), Store)
+    assert isinstance(get_store("redis://localhost"), RedisStore)
+    assert isinstance(get_store("sqlite:///db"), SqlStore)
+    # assert isinstance(get_store("postgresql:///db"), SqlStore)
+    # assert isinstance(get_store("mysql:///db"), SqlStore)
+    assert isinstance(get_store("./store.zip"), ZipStore)
 
 
 def test_store_virtual(fixtures_path):

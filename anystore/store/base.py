@@ -9,7 +9,7 @@ from anystore.exceptions import DoesNotExist
 from anystore.mixins import BaseModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.types import Uri, Value, Model
+from anystore.types import BytesGenerator, Uri, Value, Model
 from anystore.util import clean_dict, ensure_uri, join_uri, make_checksum
 
 
@@ -227,7 +227,7 @@ class BaseStore(BaseModel):
         with self._bytes_io(key, **kwargs) as io:
             return make_checksum(io, algorithm)
 
-    def stream_bytes(self, key: Uri, **kwargs) -> Any:
+    def stream_bytes(self, key: Uri, **kwargs) -> BytesGenerator:
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         with self._bytes_io(key, **kwargs) as io:

@@ -11,7 +11,7 @@ from banal import ensure_dict
 from anystore.io import smart_open, smart_read, smart_stream, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStats, BaseStore
-from anystore.types import Value
+from anystore.types import Value, ValueStream
 from anystore.util import join_uri
 
 
@@ -39,7 +39,7 @@ class Store(BaseStore):
 
     def _stream(
         self, key: str, raise_on_nonexist: bool | None = True, **kwargs
-    ) -> Generator[Value, None, None]:
+    ) -> ValueStream:
         try:
             yield from smart_stream(key, **kwargs)
         except FileNotFoundError:
