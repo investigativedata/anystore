@@ -8,6 +8,7 @@ from anystore.store.base import BaseStore
 from anystore.store.fs import Store
 from anystore.store.memory import MemoryStore
 from anystore.store.zip import ZipStore
+from anystore.types import Uri
 from anystore.util import ensure_uri
 
 
@@ -50,6 +51,14 @@ def get_store(
     if "zip" in os.path.splitext(uri)[1]:
         return ZipStore(uri=uri, **kwargs)
     return Store(uri=uri, **kwargs)
+
+
+def get_store_for_uri(uri: Uri, **kwargs) -> tuple[Store, str]:
+    parsed = urlparse(ensure_uri(uri))
+    if parsed.scheme in ("redis", "memory") or "sql" in parsed.scheme:
+        raise NotImplementedError(f"Cannot parse `{uri}` with scheme `{parsed.scheme}`")
+    base_uri, path = str(uri).rsplit("/", 1)
+    return get_store(base_uri, **kwargs), path
 
 
 __all__ = ["get_store", "Store", "MemoryStore"]
