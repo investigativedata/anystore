@@ -1,5 +1,7 @@
+import contextlib
 import shutil
 import tempfile
+from typing import BinaryIO, Generator
 
 import shortuuid
 
@@ -41,3 +43,16 @@ class VirtualStore:
 
 def get_virtual(prefix: str | None = None) -> VirtualStore:
     return VirtualStore(prefix)
+
+
+@contextlib.contextmanager
+def open_virtual(
+    uri: Uri, store: BaseStore | None = None, tmp_prefix: str | None = None
+) -> Generator[BinaryIO, None, None]:
+    tmp = VirtualStore(tmp_prefix)
+    key = tmp.download(uri, store)
+    try:
+        with tmp.store.open(key) as handler:
+            yield handler
+    finally:
+        tmp.cleanup()

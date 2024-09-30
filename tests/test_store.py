@@ -11,7 +11,7 @@ from anystore.store.base import BaseStore
 from anystore.store.memory import MemoryStore
 from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
-from anystore.store.virtual import get_virtual
+from anystore.store.virtual import get_virtual, open_virtual
 from anystore.store.zip import ZipStore
 from anystore.util import DEFAULT_HASH_ALGORITHM
 from tests.conftest import setup_s3
@@ -216,6 +216,9 @@ def test_store_virtual(fixtures_path):
         path = tmp.path
         assert os.path.exists(tmp.path)
     assert not os.path.exists(path)
+
+    with open_virtual(fixtures_path / "lorem.txt") as i:
+        assert i.read().decode().startswith("Lorem")
 
 
 def test_store_readonly(tmp_path):
