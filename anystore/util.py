@@ -8,6 +8,9 @@ from banal import clean_dict as _clean_dict
 from banal import is_mapping
 
 
+DEFAULT_HASH_ALGORITHM = "sha1"
+
+
 def _clean(val: Any) -> Any:
     if val is False:
         return False
@@ -55,14 +58,14 @@ def join_uri(uri: Any, path: str) -> str:
     return urlunsplit([scheme, *parts])
 
 
-def make_checksum(io: BinaryIO, algorithm: str = "md5") -> str:
+def make_checksum(io: BinaryIO, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
     hash_ = getattr(hashlib, algorithm)()
     for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
         hash_.update(chunk)
     return hash_.hexdigest()
 
 
-def make_data_checksum(data: Any, algorithm: str = "md5") -> str:
+def make_data_checksum(data: Any, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
     data = repr(data).encode()
     return make_checksum(BytesIO(data), algorithm)
 
