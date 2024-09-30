@@ -16,7 +16,7 @@ Think of it as a `key -> value` store, and `anystore` acts as a cache backend. A
 
 ### Examples
 
-#### Base cli interface:
+Base cli interface:
 
 ```shell
 anystore -i ./local/foo.txt -o s3://mybucket/other.txt
@@ -31,7 +31,7 @@ anystore --store redis://localhost put foo "bar"
 
 anystore --store redis://localhost get foo  # -> "bar"
 ```
-#### Use in your applications:
+Use in your applications:
 
 ```python
 from anystore import smart_read, smart_write
@@ -40,22 +40,7 @@ data = smart_read("s3://mybucket/data.txt")
 smart_write(".local/data", data)
 ```
 
-#### Simple cache example via decorator:
-
-[`@anycache` is used for api view cache in `ftmq-api`](https://github.com/investigativedata/ftmstore-fastapi/blob/main/ftmstore_fastapi/views.py)
-
-```python
-from anystore import get_store, anycache
-
-cache = get_store("redis://localhost")
-
-@anycache(store=cache, key_func=lambda q: f"api/list/{q.make_key()}", ttl=60)
-def get_list_view(q: Query) -> Response:
-    result = ... # complex computing will be cached
-    return result
-```
-
-#### Mirror file collections:
+Mirror file collections:
 
 ```python
 from anystore import get_store
@@ -68,7 +53,7 @@ target = get_store("s3://mybucket/files", backend_config={"client_kwargs": {
 }})  # can be configured via ENV as well
 
 for path in source.iterate_keys():
-    # streaming copy:
+    # stream-like copy:
     with source.open(path) as i:
         with target.open(path, "wb") as o:
             i.write(o.read())
