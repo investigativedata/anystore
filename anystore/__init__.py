@@ -1,12 +1,12 @@
-from anystore.store import get_store, Store
 from anystore.decorators import anycache, async_anycache
-from anystore.io import smart_read, smart_write, smart_stream
+from anystore.io import smart_open, smart_read, smart_stream, smart_write
+from anystore.store import get_store
 
 __all__ = [
     "get_store",
-    "Store",
     "anycache",
     "async_anycache",
+    "smart_open",
     "smart_read",
     "smart_write",
     "smart_stream",
