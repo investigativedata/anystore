@@ -1,7 +1,7 @@
 from io import BytesIO
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
@@ -31,7 +31,7 @@ def clean_dict(data: Any) -> dict[str, Any]:
 def ensure_uri(uri: Any) -> str:
     if not uri:
         raise ValueError(f"Invalid uri: `{uri}`")
-    if uri == "-":  # stdin/stoud
+    if uri == "-":  # stdin/stout
         return uri
     if isinstance(uri, Path):
         return uri.absolute().as_uri()
@@ -55,7 +55,7 @@ def join_uri(uri: Any, path: str) -> str:
     return urlunsplit([scheme, *parts])
 
 
-def make_checksum(io: BytesIO, algorithm: str = "md5") -> str:
+def make_checksum(io: BinaryIO, algorithm: str = "md5") -> str:
     hash_ = getattr(hashlib, algorithm)()
     for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
         hash_.update(chunk)

@@ -1,54 +1,32 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, BinaryIO, Callable, Generator, Optional
+from typing import Any, BinaryIO, Callable, Generator
 from urllib.parse import urljoin, urlparse
 
 from pydantic import field_validator
 
-from anystore.exceptions import DoesNotExist
-from anystore.mixins import BaseModel
+from anystore.exceptions import DoesNotExist, WriteError
+from anystore.io import DEFAULT_MODE
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.types import BytesGenerator, Uri, Value, Model
-from anystore.util import clean_dict, ensure_uri, join_uri, make_checksum
+from anystore.model import StoreModel, BaseStats, Stats
+from anystore.types import Uri, Value, Model
+from anystore.util import clean_dict, ensure_uri, make_checksum
 
 
 settings = Settings()
 
 
-class BaseStats(BaseModel):
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-    size: int | None = None
+def check_readonly(func: Callable):
+    def _check(store: "BaseStore", *args, **kwargs):
+        if store.readonly:
+            raise WriteError(f"Store `{store.uri}` is configured readonly!")
+        return func(store, *args, **kwargs)
+
+    return _check
 
 
-class Stats(BaseStats):
-    name: str
-    store: str
-    path: str
-    key: str
-
-    @property
-    def uri(self) -> str:
-        if self.store.startswith("file"):
-            return self.path
-        if self.store.startswith("http"):
-            return self.path
-        return join_uri(self.store, self.path)
-
-
-class BaseStore(BaseModel):
-    uri: Uri | None = settings.uri
-    prefix: Optional[str] = ""
-    scheme: str | None = None
-    serialization_mode: Mode | None = settings.serialization_mode
-    serialization_func: Callable | None = None
-    deserialization_func: Callable | None = None
-    model: Model | None = None
-    raise_on_nonexist: bool | None = settings.raise_on_nonexist
-    default_ttl: int | None = settings.default_ttl
-    backend_config: dict[str, Any] | None = None
-
+class BaseStore(StoreModel):
     def __init__(self, **data):
         uri = data.get("uri") or settings.uri
         data["scheme"] = urlparse(str(uri)).scheme
@@ -136,11 +114,13 @@ class BaseStore(BaseModel):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
+    @check_readonly
     def pop(self, key: Uri, *args, **kwargs) -> Any:
         value = self.get(key, *args, **kwargs)
         self._delete(self.get_key(key))
         return value
 
+    @check_readonly
     def delete(self, key: Uri) -> None:
         self._delete(self.get_key(key))
 
@@ -169,6 +149,7 @@ class BaseStore(BaseModel):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
+    @check_readonly
     def put(
         self,
         key: Uri,
@@ -227,11 +208,18 @@ class BaseStore(BaseModel):
         with self._bytes_io(key, **kwargs) as io:
             return make_checksum(io, algorithm)
 
-    def stream_bytes(self, key: Uri, **kwargs) -> BytesGenerator:
+    def open(self, key: Uri, **kwargs) -> Any:
+        mode = kwargs.get("mode", DEFAULT_MODE)
+        if self.readonly and ("w" in mode or "a" in mode):
+            raise WriteError(f"Store `{self.uri}` is configured readonly!")
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        with self._bytes_io(key, **kwargs) as io:
-            yield from io
+        return self._bytes_io(key, **kwargs)
+
+    @check_readonly
+    def touch(self, key: Uri, **kwargs) -> None:
+        now = datetime.now()
+        self.put(key, now, **kwargs)
 
     def __truediv__(self, prefix: Uri) -> "BaseStore":
         """

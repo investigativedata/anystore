@@ -1,11 +1,12 @@
 from datetime import datetime
+import os
 import time
 from moto import mock_aws
 import pytest
 
-from anystore.exceptions import DoesNotExist
+from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import smart_read
-from anystore.store import Store, get_store
+from anystore.store import Store, get_store, get_store_for_uri
 from anystore.store.base import BaseStore
 from anystore.store.memory import MemoryStore
 from anystore.store.redis import RedisStore
@@ -15,7 +16,7 @@ from anystore.store.zip import ZipStore
 from tests.conftest import setup_s3
 
 
-def _test_store(fixtures_path, uri: str) -> bool:
+def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool:
     # import ipdb; ipdb.set_trace()
     # generic store test
     store = get_store(uri=uri)
@@ -27,18 +28,22 @@ def _test_store(fixtures_path, uri: str) -> bool:
 
     store.put("seri", "HELLO", serialization_func=lambda x: x.lower().encode())
     assert store.get("seri") == "hello"
-    assert (
-        store.pop("seri", deserialization_func=lambda x: x.decode().upper()) == "HELLO"
-    )
 
     # overwrite
-    store.put(key, False)
-    assert store.get(key) is False
+    if can_delete:
+        store.put(key, False)
+        assert store.get(key) is False
+
     store.put("other", None)
     assert store.get("other") is None
     store.put("foo/bar/baz", 1)
     assert store.get("foo/bar/baz") == 1
     assert store.exists("foo/bar/baz") is True
+
+    # touch
+    store.touch("touched")
+    assert store.exists("touched")
+
     # non existing key
     with pytest.raises(DoesNotExist):
         store.get("nothing")
@@ -47,7 +52,7 @@ def _test_store(fixtures_path, uri: str) -> bool:
 
     # iterate
     keys = [k for k in store.iterate_keys()]
-    assert len(keys) == 3
+    assert len(keys) == 5
     assert all(store.exists(k) for k in keys)
     keys = [k for k in store.iterate_keys("foo")]
     assert keys[0] == "foo/bar/baz"
@@ -56,16 +61,21 @@ def _test_store(fixtures_path, uri: str) -> bool:
     assert len(keys) == 1
     assert keys[0] == "foo/bar/baz"
 
-    # pop
-    store.put("popped", 1)
-    assert store.pop("popped") == 1
-    assert store.get("popped", raise_on_nonexist=False) is None
+    if can_delete:
+        # pop
+        store.put("popped", 1)
+        assert store.pop("popped") == 1
+        assert store.get("popped", raise_on_nonexist=False) is None
 
-    # delete
-    store.put("to_delete", 1)
-    assert store.exists("to_delete")
-    store.delete("to_delete")
-    assert not store.exists("to_delete")
+        # delete
+        store.put("to_delete", 1)
+        assert store.exists("to_delete")
+        store.delete("to_delete")
+        assert not store.exists("to_delete")
+        assert (
+            store.pop("seri", deserialization_func=lambda x: x.decode().upper())
+            == "HELLO"
+        )
 
     # ttl
     if isinstance(store, (RedisStore, SqlStore, MemoryStore)):
@@ -83,14 +93,15 @@ def _test_store(fixtures_path, uri: str) -> bool:
     assert store.checksum("lorem", "sha1") == sha1sum
 
     # info (stats)
-    store.delete("lorem")
-    store.put("lorem/ipsum.pdf", lorem)
-    info = store.info("lorem/ipsum.pdf")
+    store.put("lorem2/ipsum.pdf", lorem)
+    info = store.info("lorem2/ipsum.pdf")
     assert info.name == "ipsum.pdf"
     assert info.store == store.uri
-    assert info.key == "lorem/ipsum.pdf"
-    assert info.path == store.get_key("lorem/ipsum.pdf")
+    assert info.key == "lorem2/ipsum.pdf"
+    assert info.path == store.get_key("lorem2/ipsum.pdf")
     assert info.size == 296
+
+    # FIXME sql / s3 timezone!
     if info.created_at is not None:
         assert info.created_at.date() == datetime.now().date()
     if info.updated_at is not None:
@@ -127,7 +138,7 @@ def test_store_memory(fixtures_path):
 
 
 def test_store_zip(tmp_path, fixtures_path):
-    assert _test_store(fixtures_path, tmp_path / "store.zip")
+    assert _test_store(fixtures_path, tmp_path / "store.zip", can_delete=False)
 
 
 def test_store_fs(tmp_path, fixtures_path):
@@ -155,7 +166,7 @@ def test_store_fs(tmp_path, fixtures_path):
     assert tested
 
 
-def test_store_initialize(fixtures_path):
+def test_store_initialize(tmp_path, fixtures_path):
     # initialize (take env vars into account)
     get_store.cache_clear()
     store = get_store()
@@ -178,7 +189,7 @@ def test_store_initialize(fixtures_path):
     # assert isinstance(get_store("gcs://bucket"), Store)
     assert isinstance(get_store("http://example.org/files"), Store)
     assert isinstance(get_store("redis://localhost"), RedisStore)
-    assert isinstance(get_store("sqlite:///db"), SqlStore)
+    assert isinstance(get_store(f"sqlite:///{tmp_path}/db"), SqlStore)
     # assert isinstance(get_store("postgresql:///db"), SqlStore)
     # assert isinstance(get_store("mysql:///db"), SqlStore)
     assert isinstance(get_store("./store.zip"), ZipStore)
@@ -197,3 +208,42 @@ def test_store_virtual(fixtures_path):
     assert tmp.store.exists(key)
     tmp.cleanup()
     assert not tmp.store.exists(key)
+
+    with get_virtual() as tmp:
+        tmp.download(fixtures_path / "lorem.txt")
+        path = tmp.path
+        assert os.path.exists(tmp.path)
+    assert not os.path.exists(path)
+
+
+def test_store_readonly(tmp_path):
+    store = get_store(tmp_path / "readonly-store", readonly=True)
+    with pytest.raises(WriteError):
+        store.put("foo", "bar")
+    with pytest.raises(WriteError):
+        store.pop("foo")
+    with pytest.raises(WriteError):
+        store.delete("foo")
+    with pytest.raises(WriteError):
+        store.open("foo", mode="w")
+    with pytest.raises(WriteError):
+        store.touch("foo")
+
+
+def test_store_for_uri(tmp_path):
+    store, uri = get_store_for_uri(tmp_path / "foo/bar.txt")
+    assert isinstance(store, Store)
+    assert store.uri.endswith("foo")
+    assert uri == "bar.txt"
+
+    store, uri = get_store_for_uri("http://example.org/foo/bar.txt")
+    assert isinstance(store, Store)
+    assert store.uri.endswith("foo")
+    assert uri == "bar.txt"
+
+    with pytest.raises(NotImplementedError):
+        store, uri = get_store_for_uri("memory://foo/bar.txt")
+    with pytest.raises(NotImplementedError):
+        store, uri = get_store_for_uri("redis://foo/bar.txt")
+    with pytest.raises(NotImplementedError):
+        store, uri = get_store_for_uri(f"sqlite:///{tmp_path}/db.sqlite/foo/bar.txt")
