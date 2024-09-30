@@ -49,7 +49,7 @@ def test_util_checksum(tmp_path, fixtures_path):
     assert len(util.make_data_checksum(True)) == 40
     assert util.make_data_checksum(["a", 1]) != util.make_data_checksum(["a", "1"])
 
-    os.system(f"sha1sum {fixtures_path / 'lorem.txt'} > {tmp_path / "ch"}")
+    os.system(f"sha1sum {fixtures_path / 'lorem.txt'} > {tmp_path / 'ch'}")
     sys_ch = smart_read(tmp_path / "ch", mode="r").split()[0]
     with open(fixtures_path / "lorem.txt", "rb") as i:
         ch = util.make_checksum(i)
