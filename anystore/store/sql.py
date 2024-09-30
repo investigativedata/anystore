@@ -43,7 +43,7 @@ def get_engine(url: str, **kwargs) -> Engine:
     return create_engine(url, **kwargs)
 
 
-@cache
+# @cache
 def get_metadata() -> MetaData:
     return MetaData()
 
@@ -73,7 +73,7 @@ def make_table(name: str, metadata: MetaData) -> Table:
             server_default=func.now(),
         ),
         Column("ttl", Integer(), nullable=True),
-        extend_existing=True,  # FIXME?
+        # extend_existing=True,  # FIXME?
     )
 
 
