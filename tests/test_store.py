@@ -13,6 +13,7 @@ from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
 from anystore.store.virtual import get_virtual
 from anystore.store.zip import ZipStore
+from anystore.util import DEFAULT_HASH_ALGORITHM
 from tests.conftest import setup_s3
 
 
@@ -85,12 +86,13 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
         assert store.get("expired", raise_on_nonexist=False) is None
 
     # checksum
+    assert DEFAULT_HASH_ALGORITHM == "sha1"
     md5sum = "6d484beb4162b026abc7cfea019acbd1"
     sha1sum = "ed3141878ed32d8a1d583e7ce7de323118b933d3"
     lorem = smart_read(fixtures_path / "lorem.txt")
     store.put("lorem", lorem)
-    assert store.checksum("lorem") == md5sum
-    assert store.checksum("lorem", "sha1") == sha1sum
+    assert store.checksum("lorem") == sha1sum
+    assert store.checksum("lorem", "md5") == md5sum
 
     # info (stats)
     store.put("lorem2/ipsum.pdf", lorem)

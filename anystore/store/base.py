@@ -7,11 +7,11 @@ from pydantic import field_validator
 
 from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import DEFAULT_MODE
+from anystore.model import BaseStats, Stats, StoreModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.model import StoreModel, BaseStats, Stats
-from anystore.types import Uri, Value, Model
-from anystore.util import clean_dict, ensure_uri, make_checksum
+from anystore.types import Model, Uri, Value
+from anystore.util import DEFAULT_HASH_ALGORITHM, clean_dict, ensure_uri, make_checksum
 
 
 settings = Settings()
@@ -202,19 +202,21 @@ class BaseStore(StoreModel):
     def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         yield from self._iterate_keys(prefix)
 
-    def checksum(self, key: Uri, algorithm: str | None = "md5", **kwargs) -> str:
+    def checksum(
+        self, key: Uri, algorithm: str | None = DEFAULT_HASH_ALGORITHM, **kwargs
+    ) -> str:
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         with self._bytes_io(key, **kwargs) as io:
-            return make_checksum(io, algorithm)
+            return make_checksum(io, algorithm or DEFAULT_HASH_ALGORITHM)
 
-    def open(self, key: Uri, **kwargs) -> Any:
-        mode = kwargs.get("mode", DEFAULT_MODE)
+    def open(self, key: Uri, mode: str | None = DEFAULT_MODE, **kwargs) -> Any:
+        mode = mode or DEFAULT_MODE
         if self.readonly and ("w" in mode or "a" in mode):
             raise WriteError(f"Store `{self.uri}` is configured readonly!")
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        return self._bytes_io(key, **kwargs)
+        return self._bytes_io(key, mode=mode, **kwargs)
 
     @check_readonly
     def touch(self, key: Uri, **kwargs) -> None:
