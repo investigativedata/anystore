@@ -14,7 +14,7 @@ class VirtualStore:
     """
 
     def __init__(self, prefix: str | None = None) -> None:
-        self.path = tempfile.mkdtemp(prefix=(prefix or "anystore") + "-")
+        self.path = tempfile.mkdtemp(prefix=(prefix or "anystore-"))
         self.store = get_store(uri=self.path, serialization_mode="raw")
 
     def download(self, uri: Uri, store: BaseStore | None = None) -> str:
@@ -39,5 +39,5 @@ class VirtualStore:
         self.cleanup()
 
 
-def get_virtual() -> VirtualStore:
-    return VirtualStore()
+def get_virtual(prefix: str | None = None) -> VirtualStore:
+    return VirtualStore(prefix)
