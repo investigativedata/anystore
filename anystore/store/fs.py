@@ -55,10 +55,7 @@ class Store(BaseStore):
         return str(self.uri).rstrip("/")
 
     def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
-        try:
-            return smart_open(key, **kwargs)
-        except FileNotFoundError:
-            raise DoesNotExist(f"Key does not exist: `{key}`")
+        return smart_open(key, **kwargs)
 
     def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         path = self.get_key(prefix or "")
