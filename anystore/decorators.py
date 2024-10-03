@@ -9,11 +9,11 @@ def _setup_decorator(**kwargs) -> tuple[Callable, BaseStore]:
     key_func: Callable = kwargs.pop("key_func", make_signature_key)
     store: BaseStore = kwargs.pop("store", get_store(**kwargs))
     store = store.model_copy()
-    store.serialization_func = store.serialization_func or kwargs.pop(
-        "serialization_func", None
+    store.serialization_func = (
+        kwargs.pop("serialization_func", None) or store.serialization_func
     )
-    store.deserialization_func = store.deserialization_func or kwargs.pop(
-        "deserialization_func", None
+    store.deserialization_func = (
+        kwargs.pop("deserialization_func", None) or store.deserialization_func
     )
     store.raise_on_nonexist = True
     return key_func, store
