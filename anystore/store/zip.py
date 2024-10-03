@@ -37,6 +37,7 @@ class ZipStore(BaseStore):
 
     @contextlib.contextmanager
     def _reader(self, key: str, **kwargs) -> Any:
+        kwargs.pop("compression", None)
         with self._get_handler("r") as reader:
             handler = reader.open(key, **kwargs)
             try:
@@ -46,6 +47,7 @@ class ZipStore(BaseStore):
 
     @contextlib.contextmanager
     def _writer(self, key: str, **kwargs) -> Any:
+        kwargs.pop("compression", None)
         if self._exists(key):
             raise WriteError(
                 f"Can not overwrite already existing key `{key}` (ZipFile)"
