@@ -52,7 +52,7 @@ class BaseStore(StoreModel):
 
     def _stream(self, key: str, **kwargs) -> BytesGenerator:
         """
-        Stream key line by line from actual backend 
+        Stream key line by line from actual backend
         """
         kwargs["mode"] = "rb"
         with self._open(key, **kwargs) as i:
@@ -138,14 +138,14 @@ class BaseStore(StoreModel):
         **kwargs,
     ) -> Generator[Any, None, None]:
         key = self.get_key(key)
-        deserialization_func = deserialization_func or self.deserialization_func
         model = model or self.model
         try:
             for line in self._stream(key, **kwargs):
                 yield from_store(
                     line,
-                    serialization_mode,
-                    deserialization_func=deserialization_func,
+                    serialization_mode=serialization_mode or self.serialization_mode,
+                    deserialization_func=deserialization_func
+                    or self.deserialization_func,
                     model=model,
                 )
         except (FileNotFoundError, DoesNotExist):
