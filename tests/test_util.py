@@ -40,6 +40,7 @@ def test_util_join_uri():
     assert util.join_uri(Path("./foo"), "bar").startswith("file:///")
     assert util.join_uri(Path("./foo"), "bar").endswith("foo/bar")
     assert util.join_uri("s3://foo/bar.pdf", "../baz.txt") == "s3://foo/baz.txt"
+    assert util.join_uri("redis://foo/bar.pdf", "../baz.txt") == "redis://foo/baz.txt"
 
 
 def test_util_checksum(tmp_path, fixtures_path):

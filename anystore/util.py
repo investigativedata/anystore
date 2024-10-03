@@ -54,7 +54,7 @@ def join_uri(uri: Any, path: str) -> str:
         raise ValueError(f"Invalid uri: `{uri}`")
     uri += "/"
     scheme, *parts = urlsplit(uri)
-    _, *parts = urlsplit(urljoin(urlunsplit(["http", *parts]), path))
+    _, *parts = urlsplit(urljoin(urlunsplit(["", *parts]), path))
     return urlunsplit([scheme, *parts])
 
 
