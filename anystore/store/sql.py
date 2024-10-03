@@ -26,7 +26,7 @@ from sqlalchemy.engine import Connection, Engine
 
 from anystore.exceptions import DoesNotExist
 from anystore.settings import SqlSettings
-from anystore.store.base import BaseStats, BaseStore
+from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
 
 
@@ -77,7 +77,7 @@ def make_table(name: str, metadata: MetaData) -> Table:
     )
 
 
-class SqlStore(BaseStore):
+class SqlStore(VirtualIOMixin, BaseStore):
     _engine: Engine | None = None
     _conn: Connection | None = None
     _insert: Insert | None = None
@@ -100,6 +100,8 @@ class SqlStore(BaseStore):
         self._sqlite = "sqlite" in engine.name.lower()
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
+        if not isinstance(value, bytes):
+            value = value.encode()
         ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
         exists = select(self._table).where(self._table.c.key == key)

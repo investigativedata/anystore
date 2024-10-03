@@ -3,15 +3,15 @@ Store backend using any file-like location usable via `fsspec`
 """
 
 from datetime import datetime
-from typing import Generator, BinaryIO
+from typing import Generator, BinaryIO, TextIO
 
 import fsspec
 from banal import ensure_dict
 
-from anystore.io import smart_open, smart_read, smart_stream, smart_write
+from anystore.io import smart_open, smart_read, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStats, BaseStore
-from anystore.types import Value, ValueStream
+from anystore.types import Value
 from anystore.util import join_uri
 
 
@@ -37,15 +37,6 @@ class Store(BaseStore):
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
 
-    def _stream(
-        self, key: str, raise_on_nonexist: bool | None = True, **kwargs
-    ) -> ValueStream:
-        try:
-            yield from smart_stream(key, **kwargs)
-        except FileNotFoundError:
-            if raise_on_nonexist:
-                raise DoesNotExist(f"Key does not exist: `{key}`")
-
     def _exists(self, key: str) -> bool:
         return self._fs.exists(key)
 
@@ -63,8 +54,11 @@ class Store(BaseStore):
     def _get_key_prefix(self) -> str:
         return str(self.uri).rstrip("/")
 
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
-        return smart_open(key, **kwargs)
+    def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
+        try:
+            return smart_open(key, **kwargs)
+        except FileNotFoundError:
+            raise DoesNotExist(f"Key does not exist: `{key}`")
 
     def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
         path = self.get_key(prefix or "")

@@ -1,4 +1,5 @@
 import contextlib
+from pathlib import Path
 import shutil
 import tempfile
 from typing import BinaryIO, Generator
@@ -28,9 +29,16 @@ class VirtualStore:
                 o.write(i.read())
         return key
 
-    def cleanup(self) -> None:
+    def cleanup(self, path: str | None = None) -> None:
         try:
-            shutil.rmtree(self.path, ignore_errors=True)
+            if path is not None:
+                p = Path(self.path) / path
+                if p.is_dir():
+                    shutil.rmtree(str(p), ignore_errors=True)
+                else:
+                    p.unlink()
+            else:
+                shutil.rmtree(self.path, ignore_errors=True)
         except Exception:
             pass
 

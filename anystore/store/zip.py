@@ -4,7 +4,7 @@ Use a zip file as a store backend. Read-only for remote sources, writeable local
 
 import contextlib
 from datetime import datetime
-from typing import BinaryIO, Any, Generator, Literal
+from typing import BinaryIO, Any, Generator, Literal, TextIO
 from fsspec.implementations.zip import ZipFileSystem
 
 from anystore.exceptions import DoesNotExist, WriteError
@@ -47,7 +47,9 @@ class ZipStore(BaseStore):
     @contextlib.contextmanager
     def _writer(self, key: str, **kwargs) -> Any:
         if self._exists(key):
-            raise WriteError(f"Can not overwrite already existing key `{key}` (ZipFile)")
+            raise WriteError(
+                f"Can not overwrite already existing key `{key}` (ZipFile)"
+            )
         with self._get_handler("a") as writer:
             handler = writer.open(key, **kwargs)
             try:
@@ -101,7 +103,7 @@ class ZipStore(BaseStore):
     def _delete(self, key: str) -> None:
         raise WriteError(f"Can not delete `{key}`: ZipStore is append-only!")
 
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+    def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
         kwargs["mode"] = kwargs.pop("mode", DEFAULT_MODE)
         if "r" in kwargs["mode"]:
             return self._reader(key, **kwargs)

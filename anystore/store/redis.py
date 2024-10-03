@@ -12,7 +12,7 @@ import redis
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.settings import Settings
-from anystore.store.base import BaseStore, BaseStats
+from anystore.store.base import BaseStore, BaseStats, VirtualIOMixin
 from anystore.types import Value
 
 
@@ -33,13 +33,14 @@ def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
     return con
 
 
-class RedisStore(BaseStore):
+class RedisStore(VirtualIOMixin, BaseStore):
     def __init__(self, **data):
         super().__init__(**data)
         self._con = get_redis(self.uri)
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         ttl = kwargs.pop("ttl", None) or None
+        kwargs.pop("mode", None)
         self._con.set(key, value, ex=ttl, **kwargs)
 
     def _read(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:

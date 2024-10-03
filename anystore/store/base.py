@@ -1,17 +1,17 @@
+import contextlib
 from datetime import datetime
+from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Any, BinaryIO, Callable, Generator
+from typing import Any, BinaryIO, Callable, Generator, TextIO
 from urllib.parse import urljoin, urlparse
-
-from pydantic import field_validator
 
 from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import DEFAULT_MODE
 from anystore.model import BaseStats, Stats, StoreModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.types import Model, Uri, Value
-from anystore.util import DEFAULT_HASH_ALGORITHM, clean_dict, ensure_uri, make_checksum
+from anystore.types import BytesGenerator, Model, StrGenerator, Uri, Value
+from anystore.util import DEFAULT_HASH_ALGORITHM, clean_dict, make_checksum
 
 
 settings = Settings()
@@ -50,11 +50,13 @@ class BaseStore(StoreModel):
         """
         raise NotImplementedError
 
-    def _stream(self, key: str, raise_on_nonexist: bool | None = True, **kwargs) -> Any:
+    def _stream(self, key: str, **kwargs) -> BytesGenerator | StrGenerator:
         """
         Stream key line by line from actual backend (for file-like powered backend)
         """
-        raise NotImplementedError
+        with self._open(key, **kwargs) as i:
+            while line := i.readline():
+                yield line
 
     def _exists(self, key: str) -> bool:
         """
@@ -80,9 +82,10 @@ class BaseStore(StoreModel):
         """
         raise NotImplementedError
 
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
+    @contextlib.contextmanager
+    def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
         """
-        Get a bytes io handler
+        Get a io handler
         """
         raise NotImplementedError
 
@@ -137,14 +140,14 @@ class BaseStore(StoreModel):
         deserialization_func = deserialization_func or self.deserialization_func
         model = model or self.model
         try:
-            for line in self._stream(key, raise_on_nonexist, **kwargs):
+            for line in self._stream(key, **kwargs):
                 yield from_store(
                     line,
                     serialization_mode,
                     deserialization_func=deserialization_func,
                     model=model,
                 )
-        except FileNotFoundError:  # fsspec
+        except (FileNotFoundError, DoesNotExist): 
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
@@ -207,7 +210,7 @@ class BaseStore(StoreModel):
     ) -> str:
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        with self._bytes_io(key, **kwargs) as io:
+        with self._open(key, **kwargs) as io:
             return make_checksum(io, algorithm or DEFAULT_HASH_ALGORITHM)
 
     def open(self, key: Uri, mode: str | None = DEFAULT_MODE, **kwargs) -> Any:
@@ -216,7 +219,7 @@ class BaseStore(StoreModel):
             raise WriteError(f"Store `{self.uri}` is configured readonly!")
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
-        return self._bytes_io(key, mode=mode, **kwargs)
+        return self._open(key, mode=mode, **kwargs)
 
     @check_readonly
     def touch(self, key: Uri, **kwargs) -> None:
@@ -237,13 +240,26 @@ class BaseStore(StoreModel):
             raise ValueError(f"Invalid path: `{prefix}`")
         return self.__class__(**{**self.model_dump(), "prefix": prefix})
 
-    @field_validator("uri", mode="before")
-    @classmethod
-    def ensure_uri(cls, v: Any) -> str:
-        uri = ensure_uri(v)
-        return uri.rstrip("/")
 
-    @field_validator("prefix", mode="before")
-    @classmethod
-    def ensure_prefix(cls, v: Any) -> str:
-        return str(v or "").rstrip("/")
+class VirtualIOMixin:
+    @contextlib.contextmanager
+    def _open(self, key: str, **kwargs) -> Generator[BytesIO | StringIO, None, None]:
+        mode = kwargs.get("mode", DEFAULT_MODE)
+        writer = "w" in mode
+        if not writer:
+            content = self._read(key, **kwargs)
+            if "b" in mode:
+                handler = BytesIO(content)
+            else:
+                handler = StringIO(content)
+        else:
+            if "b" in mode:
+                handler = BytesIO()
+            else:
+                handler = StringIO()
+        try:
+            yield handler
+        finally:
+            if writer:
+                self._write(key, handler.getvalue(), **kwargs)
+            handler.close()

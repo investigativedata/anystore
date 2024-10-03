@@ -3,19 +3,18 @@ Simple memory dictionary store
 """
 
 from datetime import datetime, timedelta
-from io import BytesIO
-from typing import Any, Generator, BinaryIO
+from typing import Any, Generator
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
-from anystore.store.base import BaseStore, BaseStats
-from anystore.types import Value, Uri
+from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
+from anystore.types import Uri, Value
 
 
 log = get_logger(__name__)
 
 
-class MemoryStore(BaseStore):
+class MemoryStore(VirtualIOMixin, BaseStore):
     def __init__(self, **data):
         super().__init__(**data)
         self._store: dict[str, Any] = {}
@@ -66,10 +65,9 @@ class MemoryStore(BaseStore):
         if ttl and datetime.now() > ttl:
             self._delete(key)
 
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
-        kwargs["mode"] = "rb"
-        content = self._read(key, **kwargs)
-        return BytesIO(content)
-
     def __truediv__(self, prefix: Uri) -> "BaseStore":
-        raise NotImplementedError
+        new_store = self.model_copy()
+        new_store.prefix = str(prefix)
+        new_store._store = self._store
+        new_store._ttl = self._ttl
+        return new_store

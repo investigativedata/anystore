@@ -18,7 +18,6 @@ from tests.conftest import setup_s3
 
 
 def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool:
-    # import ipdb; ipdb.set_trace()
     # generic store test
     store = get_store(uri=uri)
     assert isinstance(store, BaseStore)
@@ -110,13 +109,30 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
         assert info.updated_at.date() == datetime.now().date()
 
     # path-like inheritance
-    if not isinstance(store, MemoryStore):
-        new_store = store / "child-path"
-        new_store.put("foo", "bar")
-        assert store.get("child-path/foo") == "bar"
-    else:
-        with pytest.raises(NotImplementedError):
-            store / "child-path"
+    new_store = store / "child-path"
+    new_store.put("foo", "bar")
+    assert store.get("child-path/foo") == "bar"
+
+    # streaming io
+    lorem = smart_read(fixtures_path / "lorem.txt", mode="r")
+    with store.open("lorem.txt", "wb") as o:
+        with open(fixtures_path / "lorem.txt", "rb") as i:
+            o.write(i.read())
+    assert store.get("lorem.txt") == lorem
+    with store.open("lorem.txt", "r") as i:
+        assert i.read() == lorem
+    with store.open("lorem.txt", "rb") as i:
+        assert i.read() == lorem.encode()
+    with store.open("lorem2.txt", "w") as o:
+        o.write(lorem)
+    assert store.get("lorem2.txt") == lorem
+    tested = False
+    for ix, line in enumerate(store.stream("lorem.txt", mode="r")):
+        if ix == 1:
+            assert line.startswith("tempor")
+            tested = True
+            break
+    assert tested
 
     return True
 
@@ -157,16 +173,6 @@ def test_store_fs(tmp_path, fixtures_path):
     assert (tmp_path / "foo/bar/baz").exists()
     assert store.get("/bar/baz") == 1
 
-    # stream
-    store = Store(uri=fixtures_path)
-    tested = False
-    for ix, line in enumerate(store.stream("lorem.txt", mode="r")):
-        if ix == 1:
-            assert line.startswith("tempor")
-            tested = True
-            break
-    assert tested
-
 
 def test_store_initialize(tmp_path, fixtures_path):
     # initialize (take env vars into account)
@@ -177,6 +183,7 @@ def test_store_initialize(tmp_path, fixtures_path):
 
     store = Store.from_json_uri(fixtures_path / "store.json")
     assert store.uri == "file:///tmp/cache"
+    assert store.is_local
 
     store = Store(uri="s3://anystore", raise_on_nonexist=False)
     assert store.raise_on_nonexist is False
