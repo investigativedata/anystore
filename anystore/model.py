@@ -17,7 +17,7 @@ settings = Settings()
 class BaseStats(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
-    size: int | None = None
+    size: int
 
 
 class Stats(BaseStats):
@@ -28,9 +28,7 @@ class Stats(BaseStats):
 
     @property
     def uri(self) -> str:
-        if self.store.startswith("file"):
-            return self.path
-        if self.store.startswith("http"):
+        if "sql" in urlparse(self.store).scheme:
             return self.path
         return join_uri(self.store, self.path)
 
@@ -54,6 +52,10 @@ class StoreModel(BaseModel):
     @cached_property
     def is_local(self) -> bool:
         return self.scheme == "file"
+
+    @cached_property
+    def is_sql(self) -> bool:
+        return "sql" in self.scheme
 
     @field_validator("uri", mode="before")
     @classmethod

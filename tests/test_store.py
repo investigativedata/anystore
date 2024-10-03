@@ -99,8 +99,10 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     assert info.name == "ipsum.pdf"
     assert info.store == store.uri
     assert info.key == "lorem2/ipsum.pdf"
-    assert info.path == store.get_key("lorem2/ipsum.pdf")
+    assert info.path == "/".join((store.prefix, info.key)) if store.prefix else info.key
     assert info.size == 296
+    if not store.is_sql:
+        assert info.uri.startswith(store.uri)
 
     # FIXME sql / s3 timezone!
     if info.created_at is not None:
@@ -144,7 +146,7 @@ def test_store_s3(fixtures_path):
 
 
 def test_store_redis(fixtures_path):
-    assert _test_store(fixtures_path, "redis:///localhost")
+    assert _test_store(fixtures_path, "redis://localhost")
 
 
 def test_store_sql(fixtures_path, tmp_path):
@@ -152,7 +154,7 @@ def test_store_sql(fixtures_path, tmp_path):
 
 
 def test_store_memory(fixtures_path):
-    assert _test_store(fixtures_path, "memory:///")
+    assert _test_store(fixtures_path, "memory://")
 
 
 def test_store_zip(tmp_path, fixtures_path):

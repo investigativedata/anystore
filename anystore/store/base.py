@@ -83,6 +83,12 @@ class BaseStore(StoreModel):
         """
         raise NotImplementedError
 
+    def _get_relpath(self, key: str) -> str:
+        """
+        Get relative path to the given key
+        """
+        return self.get_key(key).replace(self.uri, "").lstrip("/")
+
     @contextlib.contextmanager
     def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
         """
@@ -186,12 +192,13 @@ class BaseStore(StoreModel):
 
     def info(self, key: Uri) -> Stats:
         stats = self._info(self.get_key(key))
+        key = str(key)
         return Stats(
             **stats.model_dump(),
-            name=Path(str(key)).name,
+            name=Path(key).name,
             store=str(self.uri),
-            path=self.get_key(key),
-            key=str(key),
+            path=self._get_relpath(key),
+            key=key,
         )
 
     def ensure_kwargs(self, **kwargs) -> dict[str, Any]:
