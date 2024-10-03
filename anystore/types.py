@@ -11,4 +11,3 @@ Model: TypeAlias = Type[BaseModel]
 
 StrGenerator: TypeAlias = Generator[str, None, None]
 BytesGenerator: TypeAlias = Generator[bytes, None, None]
-ValueStream: TypeAlias = Generator[Value, None, None]

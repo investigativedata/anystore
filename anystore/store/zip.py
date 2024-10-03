@@ -10,7 +10,7 @@ from fsspec.implementations.zip import ZipFileSystem
 from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import DEFAULT_MODE, DEFAULT_WRITE_MODE
 from anystore.store.base import BaseStats, BaseStore
-from anystore.types import Value, ValueStream, Uri
+from anystore.types import Value, Uri
 
 
 class ZipStore(BaseStore):
@@ -70,18 +70,6 @@ class ZipStore(BaseStore):
             with self._reader(key, **kwargs) as fh:
                 return fh.read()
         except (KeyError, DoesNotExist):
-            if raise_on_nonexist:
-                raise DoesNotExist(f"Key does not exist: `{key}`")
-            return None
-
-    def _stream(
-        self, key: str, raise_on_nonexist: bool | None = True, **kwargs
-    ) -> ValueStream:
-        kwargs["mode"] = kwargs.pop("mode", DEFAULT_MODE)
-        try:
-            with self._reader(key, **kwargs) as fh:
-                yield from fh
-        except KeyError:
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None

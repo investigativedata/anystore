@@ -10,7 +10,7 @@ from anystore.io import DEFAULT_MODE
 from anystore.model import BaseStats, Stats, StoreModel
 from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
-from anystore.types import BytesGenerator, Model, StrGenerator, Uri, Value
+from anystore.types import BytesGenerator, Model, Uri, Value
 from anystore.util import DEFAULT_HASH_ALGORITHM, clean_dict, make_checksum
 
 
@@ -50,10 +50,11 @@ class BaseStore(StoreModel):
         """
         raise NotImplementedError
 
-    def _stream(self, key: str, **kwargs) -> BytesGenerator | StrGenerator:
+    def _stream(self, key: str, **kwargs) -> BytesGenerator:
         """
-        Stream key line by line from actual backend (for file-like powered backend)
+        Stream key line by line from actual backend 
         """
+        kwargs["mode"] = "rb"
         with self._open(key, **kwargs) as i:
             while line := i.readline():
                 yield line
@@ -147,7 +148,7 @@ class BaseStore(StoreModel):
                     deserialization_func=deserialization_func,
                     model=model,
                 )
-        except (FileNotFoundError, DoesNotExist): 
+        except (FileNotFoundError, DoesNotExist):
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
             return None
