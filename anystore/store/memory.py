@@ -16,6 +16,7 @@ log = get_logger(__name__)
 
 class MemoryStore(VirtualIOMixin, BaseStore):
     def __init__(self, **data):
+        data["uri"] = "memory://"
         super().__init__(**data)
         self._store: dict[str, Any] = {}
         self._ttl: dict[str, datetime] = {}
