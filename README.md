@@ -6,7 +6,7 @@
 
 # anystore
 
-Store anything anywhere. `anystore` provides a high-level storage and retrieval interface for various supported _store_ backends, such as `redis`, `Sql`, `file`, `http`, cloud-storages and anything else supported by [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/index.html).
+Store anything anywhere. `anystore` provides a high-level storage and retrieval interface for various supported _store_ backends, such as `redis`, `sql`, `file`, `http`, cloud-storages and anything else supported by [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/index.html).
 
 Think of it as a `key -> value` store, and `anystore` acts as a cache backend. And when _keys_ become filenames and _values_ become byte blobs, `anystore` becomes actually a file-like storage backend – but always with the same and interchangeable interface.
 
