@@ -1,11 +1,15 @@
 from typing import Any, Callable, Optional
 from datetime import datetime
+from functools import cached_property
+from urllib.parse import urlparse
+
+from pydantic import field_validator
 
 from anystore.mixins import BaseModel
 from anystore.settings import Settings
 from anystore.serialize import Mode
-from anystore.util import join_uri
-from anystore.types import Uri, Model
+from anystore.util import join_uri, ensure_uri
+from anystore.types import Model
 
 settings = Settings()
 
@@ -32,9 +36,8 @@ class Stats(BaseStats):
 
 
 class StoreModel(BaseModel):
-    uri: Uri | None = settings.uri
+    uri: str
     prefix: Optional[str] = ""
-    scheme: str | None = None
     serialization_mode: Mode | None = settings.serialization_mode
     serialization_func: Callable | None = None
     deserialization_func: Callable | None = None
@@ -43,3 +46,22 @@ class StoreModel(BaseModel):
     default_ttl: int | None = settings.default_ttl
     backend_config: dict[str, Any] | None = None
     readonly: bool | None = False
+
+    @cached_property
+    def scheme(self) -> str:
+        return urlparse(self.uri).scheme
+
+    @cached_property
+    def is_local(self) -> bool:
+        return self.scheme == "file"
+
+    @field_validator("uri", mode="before")
+    @classmethod
+    def ensure_uri(cls, v: Any) -> str:
+        uri = ensure_uri(v)
+        return uri.rstrip("/")
+
+    @field_validator("prefix", mode="before")
+    @classmethod
+    def ensure_prefix(cls, v: Any) -> str:
+        return str(v or "").rstrip("/")
