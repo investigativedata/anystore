@@ -7,6 +7,7 @@ from typing import Any, BinaryIO, Generator, TextIO, TypeAlias
 from fsspec import open
 from fsspec.core import OpenFile
 
+from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.util import ensure_uri
 
@@ -40,12 +41,15 @@ class SmartHandler:
         self.handler: OpenFile | TextIO | None = None
 
     def open(self):
-        if self.is_buffer:
-            self.handler = self.sys_io
-        else:
-            handler = open(self.uri, **self.kwargs)
-            self.handler = handler.open()
-        return self.handler
+        try:
+            if self.is_buffer:
+                self.handler = self.sys_io
+            else:
+                handler = open(self.uri, **self.kwargs)
+                self.handler = handler.open()
+            return self.handler
+        except FileNotFoundError as e:
+            raise DoesNotExist from e
 
     def close(self):
         if not self.is_buffer and self.handler is not None:
@@ -67,6 +71,8 @@ def smart_open(
     handler = SmartHandler(uri, mode=mode, **kwargs)
     try:
         yield handler.open()
+    except FileNotFoundError as e:
+        raise DoesNotExist from e
     finally:
         handler.close()
 
