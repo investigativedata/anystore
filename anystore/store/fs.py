@@ -6,13 +6,12 @@ from datetime import datetime
 from typing import Generator, BinaryIO, TextIO
 
 import fsspec
-from banal import ensure_dict
 
 from anystore.io import smart_open, smart_read, smart_write
 from anystore.exceptions import DoesNotExist
 from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value
-from anystore.util import join_uri
+from anystore.util import ensure_uri, join_relpaths, join_uri
 
 
 class Store(BaseStore):
@@ -57,10 +56,29 @@ class Store(BaseStore):
     def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
         return smart_open(key, **kwargs)
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        path = self.get_key(prefix or "")
-        mapper = fsspec.get_mapper(path, **ensure_dict(self.backend_config))
-        for key in mapper.keys():
-            if prefix:
-                key = f"{prefix}/{key}"
-            yield key
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
+        prefix = prefix or ""
+        exclude_prefix = exclude_prefix or ""
+        glob = glob or ""
+
+        if glob:
+            for key in self._fs.glob(self.get_key(join_relpaths(prefix, glob))):
+                key = self._get_relpath(ensure_uri(key))
+                if not exclude_prefix or not key.startswith(exclude_prefix):
+                    yield key
+        else:
+            path = self.get_key(prefix)
+            for _, children, keys in self._fs.walk(path, maxdepth=1):
+                for key in keys:
+                    key = join_relpaths(self._get_relpath(path), key)
+                    if not exclude_prefix or not key.startswith(exclude_prefix):
+                        yield key
+                for key in children:
+                    key = self._get_relpath(join_uri(path, key))
+                    if not exclude_prefix or not key.startswith(exclude_prefix):
+                        yield from self._iterate_keys(key, exclude_prefix)

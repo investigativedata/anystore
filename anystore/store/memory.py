@@ -2,6 +2,7 @@
 Simple memory dictionary store
 """
 
+from fnmatch import fnmatch
 from datetime import datetime, timedelta
 from typing import Any, Generator
 
@@ -51,15 +52,18 @@ class MemoryStore(VirtualIOMixin, BaseStore):
     def _delete(self, key: str) -> None:
         self._store.pop(key, None)
 
-    def _get_key_prefix(self) -> str:
-        return "anystore"
-
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         prefix = self.get_key(prefix or "")
-        key_prefix = self._get_key_prefix()
         for key in self._store:
             if key.startswith(prefix):
-                yield key[len(key_prefix) + 1 :]
+                if not exclude_prefix or not key.startswith(exclude_prefix):
+                    if not glob or fnmatch(key, glob):
+                        yield key
 
     def _check_ttl(self, key: str) -> None:
         ttl = self._ttl.get(key)

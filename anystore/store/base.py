@@ -75,9 +75,14 @@ class BaseStore(StoreModel):
         """
         Get backend specific key prefix
         """
-        raise NotImplementedError
+        return ""
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         """
         Backend specific key iterator
         """
@@ -87,7 +92,7 @@ class BaseStore(StoreModel):
         """
         Get relative path to the given key
         """
-        return self.get_key(key).replace(self.uri, "").lstrip("/")
+        return self.get_key(key).replace(self.uri, "").strip("/")
 
     @contextlib.contextmanager
     def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
@@ -214,8 +219,13 @@ class BaseStore(StoreModel):
             return f"{self._get_key_prefix()}/{self.prefix}/{str(key)}".strip("/")
         return f"{self._get_key_prefix()}/{str(key)}".strip("/")
 
-    def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        for key in self._iterate_keys(prefix):
+    def iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
+        for key in self._iterate_keys(prefix, exclude_prefix, glob):
             yield unquote(key)
 
     def checksum(

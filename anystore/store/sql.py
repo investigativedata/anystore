@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 from functools import cache
-from typing import Generator, Optional, Union, BinaryIO
-from io import BytesIO
+from operator import and_, not_
+from typing import Generator, Optional, Union
 
 from banal import ensure_dict
 from sqlalchemy import (
@@ -28,6 +28,7 @@ from anystore.exceptions import DoesNotExist
 from anystore.settings import SqlSettings
 from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
+from anystore.util import join_relpaths
 
 
 settings = SqlSettings()
@@ -157,22 +158,26 @@ class SqlStore(VirtualIOMixin, BaseStore):
     def _get_key_prefix(self) -> str:
         return ""
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         table = self._table
-        key = self.get_key(prefix or "")
-        if not prefix:
-            stmt = select(table.c.key)
-        else:
-            key = f"{key}%"
-            stmt = select(table.c.key).where(table.c.key.like(key))
+        key_prefix = self.get_key(prefix or "")
+        key_prefix = join_relpaths(key_prefix, (glob or "*").replace("*", "%"))
+        stmt = select(table.c.key).where(table.c.key.like(key_prefix))
+        if exclude_prefix:
+            stmt = select(table.c.key).where(
+                and_(
+                    table.c.key.like(key_prefix),
+                    not_(table.c.key.like(f"{self.get_key(exclude_prefix)}%")),
+                )
+            )
         with self._engine.connect() as conn:
             conn = conn.execution_options(stream_results=True)
             cursor = conn.execute(stmt)
             while rows := cursor.fetchmany(10_000):
                 for row in rows:
                     yield row[0]
-
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
-        kwargs["mode"] = "rb"
-        content = self._read(key, **kwargs)
-        return BytesIO(content)

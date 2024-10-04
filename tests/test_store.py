@@ -60,6 +60,24 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     keys = [k for k in store.iterate_keys("foo/bar")]
     assert len(keys) == 1
     assert keys[0] == "foo/bar/baz"
+    # exclude prefix
+    # keys = [k for k in store.iterate_keys(exclude_prefix="test")]
+    # assert len(keys) == 4
+    # assert "foo/bar/baz" in keys
+    # keys = [k for k in store.iterate_keys(exclude_prefix="foo/bar")]
+    # assert len(keys) == 4
+    # keys = [k for k in store.iterate_keys(prefix="foo", exclude_prefix="foo/bar")]
+    # assert len(keys) == 0
+    # # glob
+    # keys = [k for k in store.iterate_keys(glob="*/bar/*")]
+    # assert len(keys) == 1
+    # assert keys[0] == "foo/bar/baz"
+    # keys = [k for k in store.iterate_keys(glob="**/baz")]
+    # assert len(keys) == 1
+    # assert keys[0] == "foo/bar/baz"
+    # keys = [k for k in store.iterate_keys(prefix="foo", glob="**/baz")]
+    # assert len(keys) == 1
+    # assert keys[0] == "foo/bar/baz"
 
     if can_delete:
         # pop

@@ -14,6 +14,7 @@ from anystore.logging import get_logger
 from anystore.settings import Settings
 from anystore.store.base import BaseStore, BaseStats, VirtualIOMixin
 from anystore.types import Value
+from anystore.util import join_relpaths
 
 
 log = get_logger(__name__)
@@ -70,14 +71,17 @@ class RedisStore(VirtualIOMixin, BaseStore):
             return self.backend_config.get("redis_prefix") or "anystore"
         return "anystore"
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        prefix = self.get_key(prefix or "") + "*"
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
+        prefix = self.get_key(prefix or "")
+        prefix = join_relpaths(prefix, glob or "*")
         key_prefix = self._get_key_prefix()
         for key in self._con.scan_iter(prefix):
             key = key.decode()
-            yield key[len(key_prefix) + 1 :]
-
-    def _bytes_io(self, key: str, **kwargs) -> BinaryIO:
-        kwargs["mode"] = "rb"
-        content = self._read(key, **kwargs)
-        return BytesIO(content)
+            key = key[len(key_prefix) + 1 :]
+            if not exclude_prefix or not key.startswith(exclude_prefix):
+                yield key

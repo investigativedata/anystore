@@ -11,6 +11,7 @@ from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import DEFAULT_MODE, DEFAULT_WRITE_MODE
 from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value, Uri
+from anystore.util import join_relpaths
 
 
 class ZipStore(BaseStore):
@@ -99,20 +100,49 @@ class ZipStore(BaseStore):
             return self._reader(key, **kwargs)
         return self._writer(key, **kwargs)
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        prefix = prefix or ""
-        if self.prefix and not prefix.startswith(self.prefix):
-            prefix = f"{self.prefix}/{prefix}"
-        with self._get_handler("r") as reader:
-            for member in reader.ls(prefix or ""):
-                if member["type"] == "directory":
-                    yield from self._iterate_keys(member["name"])
-                else:
-                    path = member["name"]
-                    if self.prefix:
-                        path = path[len(self.prefix) + 1 :]
-                    yield path
-
     def touch(self, key: Uri, **kwargs) -> None:
         if not self.exists(key):
             self.put(key, datetime.now(), **kwargs)
+
+    # def _iterate_keys(self, prefix: str | None = None, exclude_prefix: str | None = None, glob: str | None = None) -> Generator[str, None, None]:
+    #     prefix = self.get_key(prefix or "")
+    #     import ipdb; ipdb.set_trace()
+    #     # if self.prefix and not prefix.startswith(self.prefix):
+    #     #     prefix = f"{self.prefix}/{prefix}"
+    #     with self._get_handler("r") as reader:
+    #         for member in reader.ls(prefix or ""):
+    #             if member["type"] == "directory":
+    #                 yield from self._iterate_keys(member["name"])
+    #             else:
+    #                 path = member["name"]
+    #                 if self.prefix:
+    #                     path = path[len(self.prefix) + 1 :]
+    #                 yield path
+
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
+        prefix = self.get_key(prefix or "")
+        exclude_prefix = exclude_prefix or ""
+        glob = glob or ""
+
+        with self._get_handler("r") as reader:
+            if glob:
+                for key in reader.glob(self.get_key(join_relpaths(prefix, glob))):
+                    # key = self._get_relpath(ensure_uri(key))
+                    if not exclude_prefix or not key.startswith(exclude_prefix):
+                        yield key
+            else:
+                path = self.get_key(prefix)
+                for _, children, keys in reader.walk(path, maxdepth=1):
+                    for key in keys:
+                        key = join_relpaths(self._get_relpath(path), key)
+                        if not exclude_prefix or not key.startswith(exclude_prefix):
+                            yield key
+                    for key in children:
+                        key = join_relpaths(path, key)
+                        if not exclude_prefix or not key.startswith(exclude_prefix):
+                            yield from self._iterate_keys(key, exclude_prefix)

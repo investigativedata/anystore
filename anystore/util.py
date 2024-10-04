@@ -58,6 +58,10 @@ def join_uri(uri: Any, path: str) -> str:
     return urlunsplit([scheme, *parts])
 
 
+def join_relpaths(*parts: str) -> str:
+    return "/".join((p.strip("/") for p in parts if p)).strip("/")
+
+
 def make_checksum(io: BinaryIO, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
     hash_ = getattr(hashlib, algorithm)()
     for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
