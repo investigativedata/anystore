@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, BinaryIO, Callable, Generator, TextIO
 from urllib.parse import unquote, urljoin, urlparse
 
-from anystore.exceptions import DoesNotExist, WriteError
+from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE
 from anystore.model import BaseStats, Stats, StoreModel
 from anystore.serialize import Mode, from_store, to_store
@@ -20,7 +20,7 @@ settings = Settings()
 def check_readonly(func: Callable):
     def _check(store: "BaseStore", *args, **kwargs):
         if store.readonly:
-            raise WriteError(f"Store `{store.uri}` is configured readonly!")
+            raise ReadOnlyError(f"Store `{store.uri}` is configured readonly!")
         return func(store, *args, **kwargs)
 
     return _check
@@ -239,7 +239,7 @@ class BaseStore(StoreModel):
     def open(self, key: Uri, mode: str | None = DEFAULT_MODE, **kwargs) -> Any:
         mode = mode or DEFAULT_MODE
         if self.readonly and ("w" in mode or "a" in mode):
-            raise WriteError(f"Store `{self.uri}` is configured readonly!")
+            raise ReadOnlyError(f"Store `{self.uri}` is configured readonly!")
         kwargs = self.ensure_kwargs(**kwargs)
         key = self.get_key(key)
         return self._open(key, mode=mode, **kwargs)

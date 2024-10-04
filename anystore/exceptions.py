@@ -2,5 +2,5 @@ class DoesNotExist(FileNotFoundError):
     pass
 
 
-class WriteError(Exception):
+class ReadOnlyError(Exception):
     pass

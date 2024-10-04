@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import BinaryIO, Any, Generator, Literal, TextIO
 from fsspec.implementations.zip import ZipFileSystem
 
-from anystore.exceptions import DoesNotExist, WriteError
+from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE, DEFAULT_WRITE_MODE
 from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value, Uri
@@ -50,7 +50,7 @@ class ZipStore(BaseStore):
     def _writer(self, key: str, **kwargs) -> Any:
         kwargs.pop("compression", None)
         if self._exists(key):
-            raise WriteError(
+            raise ReadOnlyError(
                 f"Can not overwrite already existing key `{key}` (ZipFile)"
             )
         with self._get_handler("a") as writer:
@@ -92,7 +92,7 @@ class ZipStore(BaseStore):
         return ""
 
     def _delete(self, key: str) -> None:
-        raise WriteError(f"Can not delete `{key}`: ZipStore is append-only!")
+        raise ReadOnlyError(f"Can not delete `{key}`: ZipStore is append-only!")
 
     def _open(self, key: str, **kwargs) -> BinaryIO | TextIO:
         kwargs["mode"] = kwargs.pop("mode", DEFAULT_MODE)
@@ -132,7 +132,6 @@ class ZipStore(BaseStore):
         with self._get_handler("r") as reader:
             if glob:
                 for key in reader.glob(self.get_key(join_relpaths(prefix, glob))):
-                    # key = self._get_relpath(ensure_uri(key))
                     if not exclude_prefix or not key.startswith(exclude_prefix):
                         yield key
             else:
