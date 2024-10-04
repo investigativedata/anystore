@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Generator, TextIO
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 from anystore.exceptions import DoesNotExist, WriteError
 from anystore.io import DEFAULT_MODE
@@ -211,7 +211,8 @@ class BaseStore(StoreModel):
         return f"{self._get_key_prefix()}/{str(key)}".strip("/")
 
     def iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
-        yield from self._iterate_keys(prefix)
+        for key in self._iterate_keys(prefix):
+            yield unquote(key)
 
     def checksum(
         self, key: Uri, algorithm: str | None = DEFAULT_HASH_ALGORITHM, **kwargs
