@@ -1,5 +1,8 @@
+from multiprocessing import cpu_count
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from anystore.serialize import Mode
 
 
@@ -17,6 +20,7 @@ class Settings(BaseSettings):
     redis_debug: bool = Field(alias="redis_debug", default=False)
     log_json: bool = Field(alias="log_json", default=False)
     log_level: str = Field(alias="log_level", default="info")
+    worker_threads: int = Field(alias="worker_threads", default=cpu_count())
 
 
 class SqlSettings(BaseSettings):

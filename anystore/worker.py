@@ -4,9 +4,11 @@ from multiprocessing import cpu_count
 from queue import Queue
 
 from anystore.logging import get_logger
+from anystore.settings import Settings
 
 
 log = get_logger(__name__)
+settings = Settings()
 
 
 class RaisingThread(threading.Thread):
@@ -26,12 +28,12 @@ class RaisingThread(threading.Thread):
 class Worker:
     def __init__(
         self,
-        threads: int | None = None,
+        threads: int | None = settings.worker_threads,
         tasks: Generator[Any, None, None] | None = None,
         handle: Callable | None = None,
         handle_error: Callable | None = None,
     ) -> None:
-        self.consumer_threads = max(1, threads or cpu_count())
+        self.consumer_threads = max(2, threads or cpu_count()) - 1
         self.producer = RaisingThread(target=self.produce)
         self.queue = Queue()
         self.consumers = []
