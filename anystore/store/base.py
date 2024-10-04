@@ -131,8 +131,12 @@ class BaseStore(StoreModel):
         return value
 
     @check_readonly
-    def delete(self, key: Uri) -> None:
-        self._delete(self.get_key(key))
+    def delete(self, key: Uri, ignore_errors: bool = False) -> None:
+        try:
+            self._delete(self.get_key(key))
+        except Exception as e:
+            if not ignore_errors:
+                raise e
 
     def stream(
         self,
