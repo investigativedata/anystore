@@ -1,0 +1,34 @@
+site_name: anystore
+site_url: https://investigativedata.io/docs/anystore
+repo_url: https://github.com/investigativedata/anystore
+nav:
+  - Overview: index.md
+theme:
+  name: material
+  logo: https://cdn.investigativedata.org/style/logo_basic_dark.svg
+  favicon: https://cdn.investigativedata.org/style/favicon.svg
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    # - navigation.footer
+    - toc.follow
+    - content.code.copy
+extra_css:
+  - stylesheets/extra.css
+extra:
+  social:
+    - icon: material/mail
+      link: mailto:hi@investigativedata.org
+    - icon: material/web
+      link: https://investigativedata.io
+    - icon: material/github
+      link: https://github.com/investigativedata/anystore
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

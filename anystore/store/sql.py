@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 from functools import cache
+from operator import and_, not_
 from typing import Generator, Optional, Union
 
 from banal import ensure_dict
@@ -25,8 +26,9 @@ from sqlalchemy.engine import Connection, Engine
 
 from anystore.exceptions import DoesNotExist
 from anystore.settings import SqlSettings
-from anystore.store.base import BaseStore
+from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
+from anystore.util import join_relpaths
 
 
 settings = SqlSettings()
@@ -42,7 +44,7 @@ def get_engine(url: str, **kwargs) -> Engine:
     return create_engine(url, **kwargs)
 
 
-@cache
+# @cache
 def get_metadata() -> MetaData:
     return MetaData()
 
@@ -72,10 +74,11 @@ def make_table(name: str, metadata: MetaData) -> Table:
             server_default=func.now(),
         ),
         Column("ttl", Integer(), nullable=True),
+        # extend_existing=True,  # FIXME?
     )
 
 
-class SqlStore(BaseStore):
+class SqlStore(VirtualIOMixin, BaseStore):
     _engine: Engine | None = None
     _conn: Connection | None = None
     _insert: Insert | None = None
@@ -98,6 +101,8 @@ class SqlStore(BaseStore):
         self._sqlite = "sqlite" in engine.name.lower()
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
+        if not isinstance(value, bytes):
+            value = value.encode()
         ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
         exists = select(self._table).where(self._table.c.key == key)
@@ -138,6 +143,14 @@ class SqlStore(BaseStore):
             return bool(res)
         return False
 
+    def _info(self, key: str) -> BaseStats:
+        stmt = select(self._table).where(self._table.c.key == key)
+        res = self._conn.execute(stmt).first()
+        if res:
+            key, value, ts, ttl = res
+            return BaseStats(created_at=ts, size=len(value))
+        raise DoesNotExist
+
     def _delete(self, key: str) -> None:
         stmt = delete(self._table).where(self._table.c.key == key)
         self._conn.execute(stmt)
@@ -145,14 +158,23 @@ class SqlStore(BaseStore):
     def _get_key_prefix(self) -> str:
         return ""
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         table = self._table
-        key = self.get_key(prefix or "")
-        if not prefix:
-            stmt = select(table.c.key)
-        else:
-            key = f"{key}%"
-            stmt = select(table.c.key).where(table.c.key.like(key))
+        key_prefix = self.get_key(prefix or "")
+        key_prefix = join_relpaths(key_prefix, (glob or "*").replace("*", "%"))
+        stmt = select(table.c.key).where(table.c.key.like(key_prefix))
+        if exclude_prefix:
+            stmt = select(table.c.key).where(
+                and_(
+                    table.c.key.like(key_prefix),
+                    not_(table.c.key.like(f"{self.get_key(exclude_prefix)}%")),
+                )
+            )
         with self._engine.connect() as conn:
             conn = conn.execution_options(stream_results=True)
             cursor = conn.execute(stmt)
