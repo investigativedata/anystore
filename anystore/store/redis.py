@@ -3,8 +3,7 @@ Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
 from functools import cache
-from typing import Any, Generator, BinaryIO
-from io import BytesIO
+from typing import Any, Generator
 
 import fakeredis
 import redis
@@ -12,10 +11,9 @@ import redis
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.settings import Settings
-from anystore.store.base import BaseStore, BaseStats, VirtualIOMixin
+from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
 from anystore.util import join_relpaths
-
 
 log = get_logger(__name__)
 

@@ -1,6 +1,6 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from functools import cache
-from operator import and_, not_
+from operator import and_
 from typing import Generator, Optional, Union
 
 from banal import ensure_dict
@@ -29,7 +29,6 @@ from anystore.settings import SqlSettings
 from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
 from anystore.util import join_relpaths
-
 
 settings = SqlSettings()
 
@@ -172,7 +171,7 @@ class SqlStore(VirtualIOMixin, BaseStore):
             stmt = select(table.c.key).where(
                 and_(
                     table.c.key.like(key_prefix),
-                    not_(table.c.key.like(f"{self.get_key(exclude_prefix)}%")),
+                    table.c.key.not_like(f"{self.get_key(exclude_prefix)}%"),
                 )
             )
         with self._engine.connect() as conn:
@@ -180,4 +179,5 @@ class SqlStore(VirtualIOMixin, BaseStore):
             cursor = conn.execute(stmt)
             while rows := cursor.fetchmany(10_000):
                 for row in rows:
-                    yield row[0]
+                    key = row[0]
+                    yield key.strip("/")

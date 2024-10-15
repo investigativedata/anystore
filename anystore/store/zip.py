@@ -4,13 +4,14 @@ Use a zip file as a store backend. Read-only for remote sources, writeable local
 
 import contextlib
 from datetime import datetime
-from typing import BinaryIO, Any, Generator, Literal, TextIO
+from typing import Any, BinaryIO, Generator, Literal, TextIO
+
 from fsspec.implementations.zip import ZipFileSystem
 
 from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE, DEFAULT_WRITE_MODE
 from anystore.store.base import BaseStats, BaseStore
-from anystore.types import Value, Uri
+from anystore.types import Uri, Value
 from anystore.util import join_relpaths
 
 
@@ -103,21 +104,6 @@ class ZipStore(BaseStore):
     def touch(self, key: Uri, **kwargs) -> None:
         if not self.exists(key):
             self.put(key, datetime.now(), **kwargs)
-
-    # def _iterate_keys(self, prefix: str | None = None, exclude_prefix: str | None = None, glob: str | None = None) -> Generator[str, None, None]:
-    #     prefix = self.get_key(prefix or "")
-    #     import ipdb; ipdb.set_trace()
-    #     # if self.prefix and not prefix.startswith(self.prefix):
-    #     #     prefix = f"{self.prefix}/{prefix}"
-    #     with self._get_handler("r") as reader:
-    #         for member in reader.ls(prefix or ""):
-    #             if member["type"] == "directory":
-    #                 yield from self._iterate_keys(member["name"])
-    #             else:
-    #                 path = member["name"]
-    #                 if self.prefix:
-    #                     path = path[len(self.prefix) + 1 :]
-    #                 yield path
 
     def _iterate_keys(
         self,

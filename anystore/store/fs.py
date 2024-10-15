@@ -3,15 +3,16 @@ Store backend using any file-like location usable via `fsspec`
 """
 
 from datetime import datetime
-from typing import Generator, BinaryIO, TextIO
+from typing import BinaryIO, Generator, TextIO
 
 import fsspec
 
-from anystore.io import smart_open, smart_read, smart_write
 from anystore.exceptions import DoesNotExist
+from anystore.io import smart_open, smart_read, smart_write
+from anystore.model import SCHEME_S3
 from anystore.store.base import BaseStats, BaseStore
 from anystore.types import Value
-from anystore.util import ensure_uri, join_relpaths, join_uri
+from anystore.util import join_relpaths, join_uri
 
 
 class Store(BaseStore):
@@ -68,7 +69,9 @@ class Store(BaseStore):
 
         if glob:
             for key in self._fs.glob(self.get_key(join_relpaths(prefix, glob))):
-                key = self._get_relpath(ensure_uri(key))
+                key = self._get_relpath(join_uri(self.uri, key))
+                if self.scheme == SCHEME_S3:  # remove bucket name
+                    key = key.split("/", 1)[1]
                 if not exclude_prefix or not key.startswith(exclude_prefix):
                     yield key
         else:

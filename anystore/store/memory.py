@@ -2,15 +2,14 @@
 Simple memory dictionary store
 """
 
-from fnmatch import fnmatch
 from datetime import datetime, timedelta
+from fnmatch import fnmatch
 from typing import Any, Generator
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
 from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
-from anystore.types import Uri, Value
-
+from anystore.types import Value
 
 log = get_logger(__name__)
 
@@ -69,10 +68,3 @@ class MemoryStore(VirtualIOMixin, BaseStore):
         ttl = self._ttl.get(key)
         if ttl and datetime.now() > ttl:
             self._delete(key)
-
-    def __truediv__(self, prefix: Uri) -> "BaseStore":
-        new_store = self.model_copy()
-        new_store.prefix = str(prefix)
-        new_store._store = self._store
-        new_store._ttl = self._ttl
-        return new_store

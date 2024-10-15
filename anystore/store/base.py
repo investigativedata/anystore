@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Generator, TextIO
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import unquote, urlparse
 
 from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE
@@ -12,7 +12,6 @@ from anystore.serialize import Mode, from_store, to_store
 from anystore.settings import Settings
 from anystore.types import BytesGenerator, Model, Uri, Value
 from anystore.util import DEFAULT_HASH_ALGORITHM, clean_dict, make_checksum
-
 
 settings = Settings()
 
@@ -34,7 +33,7 @@ class BaseStore(StoreModel):
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         """
-        Write value with key to acutal backend
+        Write value with key to actual backend
         """
         raise NotImplementedError
 
@@ -154,15 +153,14 @@ class BaseStore(StoreModel):
     ) -> Generator[Any, None, None]:
         key = self.get_key(key)
         model = model or self.model
+        extra_kwargs = {
+            "serialization_mode": serialization_mode or self.serialization_mode,
+            "deserialization_func": deserialization_func or self.deserialization_func,
+            "model": model,
+        }
         try:
             for line in self._stream(key, **kwargs):
-                yield from_store(
-                    line,
-                    serialization_mode=serialization_mode or self.serialization_mode,
-                    deserialization_func=deserialization_func
-                    or self.deserialization_func,
-                    model=model,
-                )
+                yield from_store(line, **extra_kwargs)
         except (FileNotFoundError, DoesNotExist):
             if raise_on_nonexist:
                 raise DoesNotExist(f"Key does not exist: `{key}`")
@@ -215,8 +213,6 @@ class BaseStore(StoreModel):
         return {**config, **clean_dict(kwargs)}
 
     def get_key(self, key: Uri) -> str:
-        if self.prefix:
-            return f"{self._get_key_prefix()}/{self.prefix}/{str(key)}".strip("/")
         return f"{self._get_key_prefix()}/{str(key)}".strip("/")
 
     def iterate_keys(
@@ -248,20 +244,6 @@ class BaseStore(StoreModel):
     def touch(self, key: Uri, **kwargs) -> None:
         now = datetime.now()
         self.put(key, now, **kwargs)
-
-    def __truediv__(self, prefix: Uri) -> "BaseStore":
-        """
-        Returns a new store, like:
-            store = Store(uri="foo")
-            new_store = store / "bar"
-            assert new_store.uri == "foo/bar"
-        """
-        prefix = str(prefix).lstrip("/")
-        if self.prefix:
-            prefix = urljoin(self.prefix + "/", prefix)
-        if prefix.startswith(".."):
-            raise ValueError(f"Invalid path: `{prefix}`")
-        return self.__class__(**{**self.model_dump(), "prefix": prefix})
 
 
 class VirtualIOMixin:

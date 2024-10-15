@@ -1,10 +1,11 @@
-from datetime import datetime
 import os
 import time
-from moto import mock_aws
-import pytest
+from datetime import datetime
 
-from anystore.exceptions import DoesNotExist, WriteError
+import pytest
+from moto import mock_aws
+
+from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import smart_read
 from anystore.store import Store, get_store, get_store_for_uri
 from anystore.store.base import BaseStore
@@ -61,23 +62,23 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     assert len(keys) == 1
     assert keys[0] == "foo/bar/baz"
     # exclude prefix
-    # keys = [k for k in store.iterate_keys(exclude_prefix="test")]
-    # assert len(keys) == 4
-    # assert "foo/bar/baz" in keys
-    # keys = [k for k in store.iterate_keys(exclude_prefix="foo/bar")]
-    # assert len(keys) == 4
-    # keys = [k for k in store.iterate_keys(prefix="foo", exclude_prefix="foo/bar")]
-    # assert len(keys) == 0
-    # # glob
-    # keys = [k for k in store.iterate_keys(glob="*/bar/*")]
-    # assert len(keys) == 1
-    # assert keys[0] == "foo/bar/baz"
-    # keys = [k for k in store.iterate_keys(glob="**/baz")]
-    # assert len(keys) == 1
-    # assert keys[0] == "foo/bar/baz"
-    # keys = [k for k in store.iterate_keys(prefix="foo", glob="**/baz")]
-    # assert len(keys) == 1
-    # assert keys[0] == "foo/bar/baz"
+    keys = [k for k in store.iterate_keys(exclude_prefix="test")]
+    assert len(keys) == 4
+    assert "foo/bar/baz" in keys
+    keys = [k for k in store.iterate_keys(exclude_prefix="foo/bar")]
+    assert len(keys) == 4
+    keys = [k for k in store.iterate_keys(prefix="foo", exclude_prefix="foo/bar")]
+    assert len(keys) == 0
+    # glob
+    keys = [k for k in store.iterate_keys(glob="*/bar/*")]
+    assert len(keys) == 1
+    assert keys[0] == "foo/bar/baz"
+    keys = [k for k in store.iterate_keys(glob="**/baz")]
+    assert len(keys) == 1
+    assert keys[0] == "foo/bar/baz"
+    keys = [k for k in store.iterate_keys(prefix="foo", glob="**/baz")]
+    assert len(keys) == 1
+    assert keys[0] == "foo/bar/baz"
 
     if can_delete:
         # pop
@@ -117,21 +118,14 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     assert info.name == "ipsum.pdf"
     assert info.store == store.uri
     assert info.key == "lorem2/ipsum.pdf"
-    assert info.path == "/".join((store.prefix, info.key)) if store.prefix else info.key
     assert info.size == 296
-    if not store.is_sql:
+    if store.is_fslike:
         assert info.uri.startswith(store.uri)
 
-    # FIXME sql / s3 timezone!
     if info.created_at is not None:
         assert info.created_at.date() == datetime.now().date()
     if info.updated_at is not None:
         assert info.updated_at.date() == datetime.now().date()
-
-    # path-like inheritance
-    new_store = store / "child-path"
-    new_store.put("foo", "bar")
-    assert store.get("child-path/foo") == "bar"
 
     # streaming io
     lorem = smart_read(fixtures_path / "lorem.txt", mode="r")
@@ -153,6 +147,18 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
             tested = True
             break
     assert tested
+
+    return True
+
+
+def _test_store_crawling(fixtures_path, store: BaseStore):
+    lorem = smart_read(fixtures_path / "lorem.txt", mode="r")
+    keys = [k for k in store.iterate_keys()]
+    assert len(keys) == 6
+    keys = [k for k in store.iterate_keys(prefix="subdir")]
+    assert len(keys) == 1
+    assert store.get("lorem.txt") == lorem
+    assert store.get("subdir/lorem.txt") == lorem
 
     return True
 
@@ -188,7 +194,7 @@ def test_store_fs(tmp_path, fixtures_path):
     assert content.startswith("Lorem")
 
     # put into not yet existing sub paths
-    store = Store(uri=tmp_path / "foo", raise_on_nonexist=False)
+    store = Store(uri=tmp_path / "foo")
     store.put("/bar/baz", 1)
     assert (tmp_path / "foo/bar/baz").exists()
     assert store.get("/bar/baz") == 1
@@ -250,15 +256,15 @@ def test_store_virtual(fixtures_path):
 
 def test_store_readonly(tmp_path):
     store = get_store(tmp_path / "readonly-store", readonly=True)
-    with pytest.raises(WriteError):
+    with pytest.raises(ReadOnlyError):
         store.put("foo", "bar")
-    with pytest.raises(WriteError):
+    with pytest.raises(ReadOnlyError):
         store.pop("foo")
-    with pytest.raises(WriteError):
+    with pytest.raises(ReadOnlyError):
         store.delete("foo")
-    with pytest.raises(WriteError):
+    with pytest.raises(ReadOnlyError):
         store.open("foo", mode="w")
-    with pytest.raises(WriteError):
+    with pytest.raises(ReadOnlyError):
         store.touch("foo")
 
 
@@ -279,3 +285,16 @@ def test_store_for_uri(tmp_path):
         store, uri = get_store_for_uri("redis://foo/bar.txt")
     with pytest.raises(NotImplementedError):
         store, uri = get_store_for_uri(f"sqlite:///{tmp_path}/db.sqlite/foo/bar.txt")
+
+
+@mock_aws
+def test_store_crawling(fixtures_path):
+    assert _test_store_crawling(fixtures_path, get_store(fixtures_path))
+    assert _test_store_crawling(fixtures_path, get_store("http://localhost:8000"))
+
+    setup_s3()
+    store = get_store(fixtures_path, serialization_mode="raw")
+    target = get_store("s3://anystore", serialization_mode="raw")
+    for key in store.iterate_keys():
+        target.put(key, store.get(key))
+    assert _test_store_crawling(fixtures_path, get_store("s3://anystore"))

@@ -1,17 +1,22 @@
-from typing import Any, Callable, Optional
 from datetime import datetime
 from functools import cached_property
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from pydantic import field_validator
 
 from anystore.mixins import BaseModel
-from anystore.settings import Settings
 from anystore.serialize import Mode
-from anystore.util import join_uri, ensure_uri
+from anystore.settings import Settings
 from anystore.types import Model
+from anystore.util import ensure_uri, join_uri
 
 settings = Settings()
+
+SCHEME_FILE = "file"
+SCHEME_S3 = "s3"
+SCHEME_REDIS = "redis"
+SCHEME_MEMORY = "memory"
 
 
 class BaseStats(BaseModel):
@@ -23,19 +28,18 @@ class BaseStats(BaseModel):
 class Stats(BaseStats):
     name: str
     store: str
-    path: str
     key: str
 
     @property
     def uri(self) -> str:
-        if "sql" in urlparse(self.store).scheme:
-            return self.path
-        return join_uri(self.store, self.path)
+        store = StoreModel(uri=self.store)
+        if store.is_fslike:
+            return join_uri(self.store, self.key)
+        return self.key
 
 
 class StoreModel(BaseModel):
     uri: str
-    prefix: Optional[str] = ""
     serialization_mode: Mode | None = settings.serialization_mode
     serialization_func: Callable | None = None
     deserialization_func: Callable | None = None
@@ -51,7 +55,11 @@ class StoreModel(BaseModel):
 
     @cached_property
     def is_local(self) -> bool:
-        return self.scheme == "file"
+        return self.scheme == SCHEME_FILE
+
+    @cached_property
+    def is_fslike(self) -> bool:
+        return not self.is_sql and self.scheme not in (SCHEME_REDIS, SCHEME_MEMORY)
 
     @cached_property
     def is_sql(self) -> bool:
@@ -62,8 +70,3 @@ class StoreModel(BaseModel):
     def ensure_uri(cls, v: Any) -> str:
         uri = ensure_uri(v)
         return uri.rstrip("/")
-
-    @field_validator("prefix", mode="before")
-    @classmethod
-    def ensure_prefix(cls, v: Any) -> str:
-        return str(v or "").rstrip("/")
