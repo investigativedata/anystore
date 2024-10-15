@@ -1,12 +1,13 @@
-from rich import print
-from rich.console import Console
 from typing import Annotated, Optional
 
 import typer
+from rich import print
+from rich.console import Console
 
 from anystore import __version__
 from anystore.io import smart_read, smart_write
 from anystore.logging import configure_logging
+from anystore.mirror import mirror
 from anystore.settings import Settings
 from anystore.store import get_store
 
@@ -92,6 +93,35 @@ def cli_keys(
         S = get_store(uri=state["uri"], use_pickle=state["pickle"])
         keys = "\n".join(S.iterate_keys(prefix)) + "\n"
         smart_write(o, keys.encode())
+
+
+@cli.command("mirror")
+def cli_mirror(
+    i: Annotated[str, typer.Option("-i", help="Input store uri")],
+    o: Annotated[str, typer.Option("-o", help="Output store uri")],
+    glob: Annotated[Optional[str], typer.Option(..., help="Key glob")] = None,
+    prefix: Annotated[Optional[str], typer.Option(..., help="Key prefix")] = None,
+    exclude_prefix: Annotated[
+        Optional[str], typer.Option(..., help="Exclude key prefix")
+    ] = None,
+    overwrite: Annotated[
+        bool, typer.Option(..., help="Overwrite existing data")
+    ] = False,
+):
+    """
+    Mirror stores
+    """
+    with ErrorHandler():
+        source = get_store(i)
+        target = get_store(o)
+        mirror(
+            source=source,
+            target=target,
+            glob=glob,
+            prefix=prefix,
+            exclude_prefix=exclude_prefix,
+            overwrite=overwrite,
+        )
 
 
 @cli.command("io")
