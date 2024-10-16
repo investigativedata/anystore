@@ -73,6 +73,7 @@ def mirror(
     prefix: str | None = None,
     exclude_prefix: str | None = None,
     overwrite: bool = False,
+    **kwargs,
 ) -> tuple[int, int]:
     worker = MirrorWorker(
         source=source,
@@ -81,6 +82,7 @@ def mirror(
         prefix=prefix,
         exclude_prefix=exclude_prefix,
         overwrite=overwrite,
+        **kwargs,
     )
     worker.run()
     return worker.mirrored, worker.skipped
