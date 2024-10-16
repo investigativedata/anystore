@@ -3,9 +3,8 @@ Store backend using redis-like stores such as Redis, Fakeredis or Apache Kvrocks
 """
 
 from functools import cache
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any, Generator
 
-import fakeredis
 import redis
 
 from anystore.exceptions import DoesNotExist
@@ -15,13 +14,18 @@ from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
 from anystore.types import Value
 from anystore.util import join_relpaths
 
+if TYPE_CHECKING:
+    import fakeredis
+
 log = get_logger(__name__)
 
 
 @cache
-def get_redis(uri: str) -> fakeredis.FakeStrictRedis | redis.Redis:
+def get_redis(uri: str) -> "fakeredis.FakeStrictRedis | redis.Redis":
     settings = Settings()
     if settings.redis_debug:
+        import fakeredis
+
         con = fakeredis.FakeStrictRedis()
         con.ping()
         log.info("Redis connected: `fakeredis`")
