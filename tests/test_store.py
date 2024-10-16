@@ -83,6 +83,10 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     # glob for "child" stores (eg: s3://bucket/path)
     if store.is_fslike and not isinstance(store, ZipStore):
         _store = get_store(join_uri(store.uri, "foo"))
+        keys = [k for k in _store.iterate_keys()]
+        assert len(keys) == 1
+        assert keys[0] == "bar/baz"
+        assert _store.get("bar/baz") == 1
         keys = [k for k in _store.iterate_keys(glob="**/baz")]
         assert len(keys) == 1
         assert keys[0] == "bar/baz"
