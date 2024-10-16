@@ -1,11 +1,10 @@
-from typing import Any, Callable, Generator
 import threading
 from multiprocessing import cpu_count
 from queue import Queue
+from typing import Any, Callable, Generator
 
 from anystore.logging import get_logger
 from anystore.settings import Settings
-
 
 log = get_logger(__name__)
 settings = Settings()
@@ -53,7 +52,9 @@ class Worker:
 
     def exception(self, task: Any, e: Exception) -> None:
         if self.handle_error is None:
-            raise Exception(task) from e
+            if task is not None:
+                raise Exception(task) from e
+            raise e
         self.handle_error(task, e)
 
     def produce(self) -> None:
@@ -86,12 +87,12 @@ class Worker:
                 consumer.start()
                 self.consumers.append(consumer)
             self.producer.start()
-            self.producer.join()
             for consumer in self.consumers:
                 try:
                     consumer.join()
                 except Exception as e:
                     self.exception(None, e)
+            self.producer.join()
         except KeyboardInterrupt:
             self.exit()
         except Exception as e:
