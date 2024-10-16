@@ -39,6 +39,7 @@ class Worker:
         self.tasks = tasks
         self.handle = handle
         self.handle_error = handle_error
+        self.lock = threading.Lock()
 
     def get_tasks(self) -> Generator[Any, None, None]:
         if self.tasks is None:
