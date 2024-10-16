@@ -15,7 +15,7 @@ settings = Settings()
 cli = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=settings.debug)
 console = Console(stderr=True)
 
-state = {"uri": settings.uri, "pickle": False}
+state = {"uri": settings.uri}
 
 
 class ErrorHandler:
@@ -38,15 +38,11 @@ def cli_store(
     store: Annotated[
         Optional[str], typer.Option(..., help="Store base uri")
     ] = settings.uri,
-    pickle: Annotated[
-        Optional[bool], typer.Option(..., help="Use pickle serializer")
-    ] = False,
 ):
     if version:
         print(__version__)
         raise typer.Exit()
     state["uri"] = store
-    state["pickle"] = pickle
     configure_logging()
 
 
@@ -59,10 +55,9 @@ def cli_get(
     Get content of a `key` from a store
     """
     with ErrorHandler():
-        S = get_store(uri=state["uri"], use_pickle=state["pickle"])
+        S = get_store(uri=state["uri"], serialization_mode="raw")
         value = S.get(key)
-        mode = "w" if isinstance(value, str) else "wb"
-        smart_write(o, value, mode=mode)
+        smart_write(o, value, mode="wb")
 
 
 @cli.command("put")
@@ -78,23 +73,29 @@ def cli_put(
     Put content for a `key` to a store
     """
     with ErrorHandler():
-        S = get_store(uri=state["uri"], use_pickle=state["pickle"])
+        S = get_store(uri=state["uri"])
         value = value or smart_read(i)
         S.put(key, value)
 
 
 @cli.command("keys")
 def cli_keys(
-    prefix: Annotated[Optional[str], typer.Argument(..., help="Key prefix")] = None,
     o: Annotated[str, typer.Option("-o", help="Output uri")] = "-",
+    glob: Annotated[Optional[str], typer.Option(..., help="Key glob")] = None,
+    prefix: Annotated[Optional[str], typer.Option(..., help="Key prefix")] = None,
+    exclude_prefix: Annotated[
+        Optional[str], typer.Option(..., help="Exclude key prefix")
+    ] = None,
 ):
     """
     Iterate keys in given store
     """
     with ErrorHandler():
-        S = get_store(uri=state["uri"], use_pickle=state["pickle"])
+        S = get_store(uri=state["uri"])
         with smart_open(o, "wb") as out:
-            for key in S.iterate_keys(prefix):
+            for key in S.iterate_keys(
+                prefix=prefix, exclude_prefix=exclude_prefix, glob=glob
+            ):
                 line = f"{key}\n".encode()
                 out.write(line)
 

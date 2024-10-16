@@ -14,7 +14,7 @@ from anystore.store.redis import RedisStore
 from anystore.store.sql import SqlStore
 from anystore.store.virtual import get_virtual, open_virtual
 from anystore.store.zip import ZipStore
-from anystore.util import DEFAULT_HASH_ALGORITHM
+from anystore.util import DEFAULT_HASH_ALGORITHM, join_uri
 from tests.conftest import setup_s3
 
 
@@ -79,6 +79,14 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     keys = [k for k in store.iterate_keys(prefix="foo", glob="**/baz")]
     assert len(keys) == 1
     assert keys[0] == "foo/bar/baz"
+
+    # glob for "child" stores (eg: s3://bucket/path)
+    if store.is_fslike and not isinstance(store, ZipStore):
+        _store = get_store(join_uri(store.uri, "foo"))
+        keys = [k for k in _store.iterate_keys(glob="**/baz")]
+        assert len(keys) == 1
+        assert keys[0] == "bar/baz"
+        assert _store.get("bar/baz") == 1
 
     if can_delete:
         # pop

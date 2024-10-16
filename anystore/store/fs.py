@@ -3,6 +3,7 @@ Store backend using any file-like location usable via `fsspec`
 """
 
 from datetime import datetime
+from functools import cached_property
 from typing import BinaryIO, Generator, TextIO
 
 import fsspec
@@ -16,12 +17,9 @@ from anystore.util import join_relpaths, join_uri
 
 
 class Store(BaseStore):
-    def __init__(self, **data):
-        prefix = data.pop("prefix", None)
-        if prefix:
-            data["uri"] = join_uri(data["uri"], prefix)
-        super().__init__(**data)
-        self._fs = fsspec.url_to_fs(self.uri)[0]
+    @cached_property
+    def _fs(self) -> fsspec.AbstractFileSystem:
+        return fsspec.url_to_fs(self.uri)[0]
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         kwargs.pop("ttl", None)
@@ -69,9 +67,9 @@ class Store(BaseStore):
 
         if glob:
             for key in self._fs.glob(self.get_key(join_relpaths(prefix, glob))):
+                if self.scheme == SCHEME_S3:  # /{bucket}/{base_path}
+                    key = f"{self.scheme}://{key}"
                 key = self._get_relpath(join_uri(self.uri, key))
-                if self.scheme == SCHEME_S3:  # remove bucket name
-                    key = key.split("/", 1)[1]
                 if not exclude_prefix or not key.startswith(exclude_prefix):
                     yield key
         else:

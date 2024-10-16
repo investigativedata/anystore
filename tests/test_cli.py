@@ -25,7 +25,7 @@ def test_cli(tmp_path, fixtures_path):
     res = runner.invoke(cli, ["--store", str(tmp_path), "keys"])
     assert res.exit_code == 0
     assert len(res.stdout.split()) == 2
-    res = runner.invoke(cli, ["--store", str(tmp_path), "keys", "foo"])
+    res = runner.invoke(cli, ["--store", str(tmp_path), "keys", "--prefix", "foo"])
     assert res.exit_code == 0
     assert len(res.stdout.split()) == 1
 

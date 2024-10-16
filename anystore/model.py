@@ -54,6 +54,14 @@ class StoreModel(BaseModel):
         return urlparse(self.uri).scheme
 
     @cached_property
+    def path(self) -> str:
+        return urlparse(self.uri).path.strip("/")
+
+    @cached_property
+    def netloc(self) -> str:
+        return urlparse(self.uri).netloc
+
+    @cached_property
     def is_local(self) -> bool:
         return self.scheme == SCHEME_FILE
 

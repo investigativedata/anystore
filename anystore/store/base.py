@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Generator, TextIO
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote
 
 from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE
@@ -26,11 +26,6 @@ def check_readonly(func: Callable):
 
 
 class BaseStore(StoreModel):
-    def __init__(self, **data):
-        uri = data.get("uri") or settings.uri
-        data["scheme"] = urlparse(str(uri)).scheme
-        super().__init__(**data)
-
     def _write(self, key: str, value: Value, **kwargs) -> None:
         """
         Write value with key to actual backend
@@ -89,7 +84,7 @@ class BaseStore(StoreModel):
 
     def _get_relpath(self, key: str) -> str:
         """
-        Get relative path to the given key
+        Get relative path to the given key (backend specific)
         """
         return self.get_key(key).replace(self.uri, "").strip("/")
 
