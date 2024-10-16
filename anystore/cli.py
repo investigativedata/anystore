@@ -5,7 +5,7 @@ from rich import print
 from rich.console import Console
 
 from anystore import __version__
-from anystore.io import smart_read, smart_write
+from anystore.io import smart_open, smart_read, smart_write
 from anystore.logging import configure_logging
 from anystore.mirror import mirror
 from anystore.settings import Settings
@@ -23,7 +23,9 @@ class ErrorHandler:
         pass
 
     def __exit__(self, e, msg, _):
-        if e is not None:
+        if isinstance(msg, BrokenPipeError):
+            pass
+        elif e is not None:
             if settings.debug:
                 raise e
             console.print(f"[red][bold]{e.__name__}[/bold]: {msg}[/red]")
@@ -91,8 +93,10 @@ def cli_keys(
     """
     with ErrorHandler():
         S = get_store(uri=state["uri"], use_pickle=state["pickle"])
-        keys = "\n".join(S.iterate_keys(prefix)) + "\n"
-        smart_write(o, keys.encode())
+        with smart_open(o, "wb") as out:
+            for key in S.iterate_keys(prefix):
+                line = f"{key}\n".encode()
+                out.write(line)
 
 
 @cli.command("mirror")
