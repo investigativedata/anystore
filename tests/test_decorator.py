@@ -58,6 +58,15 @@ def test_decorator(tmp_path):
     assert model.data == cached.data == 1
     assert isinstance(cached, Model)
 
+    @anycache(store=store, model=Model)
+    def get_data6(x: int) -> Model:
+        return Model(data=x)
+
+    model = get_data6(1)
+    cached = get_data6(1)
+    assert model.data == cached.data == 1
+    assert isinstance(cached, Model)
+
 
 def test_decorator_no_args(monkeypatch):
     get_store.cache_clear()

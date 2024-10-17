@@ -1,7 +1,8 @@
 import functools
-from typing import Callable, Any
+from typing import Any, Callable
+
 from anystore.exceptions import DoesNotExist
-from anystore.store import get_store, BaseStore
+from anystore.store import BaseStore, get_store
 from anystore.util import make_signature_key
 
 
@@ -9,6 +10,7 @@ def _setup_decorator(**kwargs) -> tuple[Callable, BaseStore]:
     key_func: Callable = kwargs.pop("key_func", make_signature_key)
     store: BaseStore = kwargs.pop("store", get_store(**kwargs))
     store = store.model_copy()
+    store.model = kwargs.pop("model", None)
     store.serialization_func = (
         kwargs.pop("serialization_func", None) or store.serialization_func
     )
