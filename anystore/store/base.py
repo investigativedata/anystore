@@ -199,7 +199,6 @@ class BaseStore(StoreModel):
             **stats.model_dump(),
             name=Path(key).name,
             store=str(self.uri),
-            path=self._get_relpath(key),
             key=key,
         )
 
