@@ -21,50 +21,50 @@ def test_mirror(tmp_path, fixtures_path):
     source = get_store(fixtures_path)
     target = get_store(tmp_path / "1")
     assert not len([k for k in target.iterate_keys()])
-    mirrored, skipped = mirror(source, target)
-    assert mirrored == 6
-    assert skipped == 0
+    res = mirror(source, target)
+    assert res.mirrored == 6
+    assert res.skipped == 0
     assert source.get("lorem.txt") == target.get("lorem.txt")
     assert set(target.iterate_keys()) == KEYS
     assert set(source.iterate_keys()) == KEYS
 
-    mirrored, skipped = mirror(source, target)
-    assert mirrored == 0
-    assert skipped == 6
-    mirrored, skipped = mirror(source, target, overwrite=True)
-    assert mirrored == 6
-    assert skipped == 0
+    res = mirror(source, target)
+    assert res.mirrored == 0
+    assert res.skipped == 6
+    res = mirror(source, target, overwrite=True)
+    assert res.mirrored == 6
+    assert res.skipped == 0
     assert set(target.iterate_keys()) == KEYS
     assert set(source.iterate_keys()) == KEYS
 
     target = get_store(tmp_path / "2")
-    mirrored, skipped = mirror(source, target, prefix="subdir")
-    assert mirrored == 1
-    assert skipped == 0
+    res = mirror(source, target, prefix="subdir")
+    assert res.mirrored == 1
+    assert res.skipped == 0
     assert len([k for k in target.iterate_keys()]) == 1
     assert source.get("lorem.txt") == target.get("subdir/lorem.txt")
 
     setup_s3()
     target = get_store("s3://anystore/test-mirror")
-    mirrored, skipped = mirror(source, target)
-    assert mirrored == 6
-    assert skipped == 0
+    res = mirror(source, target)
+    assert res.mirrored == 6
+    assert res.skipped == 0
     assert source.get("lorem.txt") == target.get("lorem.txt")
     assert set(target.iterate_keys()) == KEYS
     assert set(source.iterate_keys()) == KEYS
     target_root = get_store("s3://anystore")
     assert target_root.get("test-mirror/lorem.txt") == target.get("lorem.txt")
 
-    mirrored, skipped = mirror(target, source)
-    assert mirrored == 0
-    assert skipped == 6
+    res = mirror(target, source)
+    assert res.mirrored == 0
+    assert res.skipped == 6
     assert set(target.iterate_keys()) == KEYS
     assert set(source.iterate_keys()) == KEYS
 
     target = get_store("memory://")
-    mirrored, skipped = mirror(source, target)
-    assert mirrored == 6
-    assert skipped == 0
+    res = mirror(source, target)
+    assert res.mirrored == 6
+    assert res.skipped == 0
     assert source.get("lorem.txt") == target.get("lorem.txt")
     assert set(target.iterate_keys()) == KEYS
     assert set(source.iterate_keys()) == KEYS

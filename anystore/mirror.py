@@ -6,9 +6,14 @@ from typing import Generator
 
 from anystore.logging import get_logger
 from anystore.store.base import BaseStore
-from anystore.worker import Worker
+from anystore.worker import Worker, WorkerStatus
 
 log = get_logger(__name__)
+
+
+class MirrorStatus(WorkerStatus):
+    skipped: int = 0
+    mirrored: int = 0
 
 
 class MirrorWorker(Worker):
@@ -29,8 +34,7 @@ class MirrorWorker(Worker):
         self.overwrite = overwrite
         self.source = source
         self.target = target
-        self.skipped: int = 0
-        self.mirrored: int = 0
+        self.status_model = MirrorStatus
 
     def get_tasks(self) -> Generator[str, None, None]:
         log.info("Start mirroring ...", source=self.source.uri, target=self.target.uri)
@@ -43,7 +47,7 @@ class MirrorWorker(Worker):
                 source=self.source.uri,
                 target=self.target.uri,
             )
-            self.skipped += 1
+            self.count(skipped=1)
             return
 
         log.info(
@@ -54,15 +58,13 @@ class MirrorWorker(Worker):
         with self.source.open(task, "rb") as i:
             with self.target.open(task, "wb") as o:
                 o.write(i.read())
-        self.mirrored += 1
+        self.count(mirrored=1)
 
     def done(self) -> None:
         log.info(
             "Done mirroring.",
             source=self.source.uri,
             target=self.target.uri,
-            mirrored=self.mirrored,
-            skipped=self.skipped,
         )
 
 
@@ -74,7 +76,7 @@ def mirror(
     exclude_prefix: str | None = None,
     overwrite: bool = False,
     **kwargs,
-) -> tuple[int, int]:
+) -> MirrorStatus:
     worker = MirrorWorker(
         source=source,
         target=target,
@@ -84,5 +86,4 @@ def mirror(
         overwrite=overwrite,
         **kwargs,
     )
-    worker.run()
-    return worker.mirrored, worker.skipped
+    return worker.run()

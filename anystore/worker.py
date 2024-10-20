@@ -72,7 +72,7 @@ class Worker:
         heartbeat: int | None = settings.worker_heartbeat,
         status_model: Type[WorkerStatus] | None = WorkerStatus,
     ) -> None:
-        self.consumer_threads = max(3, threads or cpu_count()) - 2
+        self.consumer_threads = max(2, threads or cpu_count()) - 1
         self.queue = Queue()
         self.consumers = []
         self.tasks = tasks
