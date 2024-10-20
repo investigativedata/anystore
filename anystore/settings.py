@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     log_json: bool = Field(alias="log_json", default=False)
     log_level: str = Field(alias="log_level", default="info")
     worker_threads: int = Field(alias="worker_threads", default=cpu_count())
+    worker_heartbeat: int = Field(alias="worker_heartbeat", default=15)
 
 
 class SqlSettings(BaseSettings):

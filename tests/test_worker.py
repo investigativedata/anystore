@@ -1,10 +1,11 @@
 import random
 import threading
 import time
-from typing import Generator
+from datetime import timedelta
+from typing import Any, Generator
 
-from anystore.worker import Worker
-from anystore.io import smart_write, smart_read
+from anystore.io import smart_read, smart_write
+from anystore.worker import Worker, WorkerStatus
 
 
 def test_worker(tmp_path):
@@ -20,43 +21,52 @@ def test_worker(tmp_path):
             smart_write(tmp_path / "done", b"yes")
 
     # parallel
-    worker = TestWorker()
-    start = time.time()
-    worker.run()
-    assert time.time() - start < 5
+    worker = TestWorker(heartbeat=1)
+    res = worker.run()
+    assert res.took
+    assert res.took < timedelta(seconds=5)
     assert smart_read(tmp_path / "done") == b"yes"
 
     # only 1 worker
-    worker = TestWorker(threads=1)
-    start = time.time()
-    worker.run()
-    assert time.time() - start > 5
+    worker = TestWorker(threads=1, heartbeat=1)
+    res = worker.run()
+    assert res.took > timedelta(seconds=5)
 
 
 def test_worker_simple():
     # simple worker
     tasks = (i for i in range(5))
-    worker = Worker(tasks=tasks, handle=lambda x: print(x))
-    start = time.time()
-    worker.run()
-    assert time.time() - start < 5
+    worker = Worker(tasks=tasks, handle=lambda x: print(x), heartbeat=1)
+    res = worker.run()
+    assert res.took
+    assert res.took < timedelta(seconds=5)
 
 
 def test_worker_errors():
 
     class TestWorker(Worker):
-        results = 0
-        errors = 0
-
         def handle_task(self, i):
             v = random.random()
             time.sleep(v / 100)
             assert v < 0.5
-            self.results += 1
 
-        def exception(self, task, e):
-            self.errors += 1
+        def exception(self, task: Any, e: Exception) -> None:
+            pass
 
-    worker = TestWorker(tasks=range(1000))
-    worker.run()
-    assert worker.results + worker.errors == 1000
+    worker = TestWorker(tasks=range(1_000), heartbeat=1)
+    res = worker.run()
+    assert res.done + res.errors == 1_000
+
+
+def test_worker_custom_status():
+    class Status(WorkerStatus):
+        items: int = 0
+
+    class TestWorker(Worker):
+        def handle_task(self, i):
+            self.count(items=-1)
+
+    worker = TestWorker(tasks=range(100), status_model=Status)
+    res = worker.run()
+    assert isinstance(res, Status)
+    assert res.items == -100
