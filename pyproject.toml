@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.1.11"
+version = "0.1.12"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
