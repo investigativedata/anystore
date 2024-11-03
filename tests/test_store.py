@@ -160,17 +160,27 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
             break
     assert tested
 
+    # ensure unquoted path
+    store.put("foo bar", "baz")
+    assert store.get("foo bar") == "baz"
+    assert store.get("foo%20bar") == "baz"
+    store.put("foo2%20bar", "baz")
+    assert store.get("foo2 bar") == "baz"
+    assert store.get("foo2%20bar") == "baz"
+
     return True
 
 
-def _test_store_crawling(fixtures_path, store: BaseStore):
+def _test_store_external(fixtures_path, store: BaseStore):
     lorem = smart_read(fixtures_path / "lorem.txt", mode="r")
     keys = [k for k in store.iterate_keys()]
     assert len(keys) == 6
-    keys = [k for k in store.iterate_keys(prefix="subdir")]
+    keys = [k for k in store.iterate_keys(prefix="sub dir")]
+    assert len(keys) == 1
+    keys = [k for k in store.iterate_keys(prefix="sub%20dir")]
     assert len(keys) == 1
     assert store.get("lorem.txt") == lorem
-    assert store.get("subdir/lorem.txt") == lorem
+    assert store.get("sub dir/lorem.txt") == lorem
 
     return True
 
@@ -210,6 +220,11 @@ def test_store_fs(tmp_path, fixtures_path):
     store.put("/bar/baz", 1)
     assert (tmp_path / "foo/bar/baz").exists()
     assert store.get("/bar/baz") == 1
+
+    store = Store(uri=fixtures_path / "sub dir")
+    assert len(list(store.iterate_keys())) == 1
+    store = Store(uri=fixtures_path / "sub%20dir")
+    assert len(list(store.iterate_keys())) == 1
 
 
 def test_store_initialize(tmp_path, fixtures_path):
@@ -300,13 +315,13 @@ def test_store_for_uri(tmp_path):
 
 
 @mock_aws
-def test_store_crawling(fixtures_path):
-    assert _test_store_crawling(fixtures_path, get_store(fixtures_path))
-    assert _test_store_crawling(fixtures_path, get_store("http://localhost:8000"))
+def test_store_external(fixtures_path):
+    assert _test_store_external(fixtures_path, get_store(fixtures_path))
+    assert _test_store_external(fixtures_path, get_store("http://localhost:8000"))
 
     setup_s3()
     store = get_store(fixtures_path, serialization_mode="raw")
     target = get_store("s3://anystore", serialization_mode="raw")
     for key in store.iterate_keys():
         target.put(key, store.get(key))
-    assert _test_store_crawling(fixtures_path, get_store("s3://anystore"))
+    assert _test_store_external(fixtures_path, get_store("s3://anystore"))

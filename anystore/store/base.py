@@ -207,7 +207,7 @@ class BaseStore(StoreModel):
         return {**config, **clean_dict(kwargs)}
 
     def get_key(self, key: Uri) -> str:
-        return f"{self._get_key_prefix()}/{str(key)}".strip("/")
+        return unquote(f"{self._get_key_prefix()}/{str(key)}".strip("/"))
 
     def iterate_keys(
         self,

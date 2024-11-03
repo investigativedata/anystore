@@ -14,7 +14,7 @@ def test_mirror(tmp_path, fixtures_path):
             "model.yaml",
             "model.json",
             "lorem.txt",
-            "subdir/lorem.txt",
+            "sub dir/lorem.txt",
         ]
     )
 
@@ -38,11 +38,11 @@ def test_mirror(tmp_path, fixtures_path):
     assert set(source.iterate_keys()) == KEYS
 
     target = get_store(tmp_path / "2")
-    res = mirror(source, target, prefix="subdir")
+    res = mirror(source, target, prefix="sub dir")
     assert res.mirrored == 1
     assert res.skipped == 0
     assert len([k for k in target.iterate_keys()]) == 1
-    assert source.get("lorem.txt") == target.get("subdir/lorem.txt")
+    assert source.get("lorem.txt") == target.get("sub dir/lorem.txt")
 
     setup_s3()
     target = get_store("s3://anystore/test-mirror")

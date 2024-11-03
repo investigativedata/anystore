@@ -1,12 +1,11 @@
-from io import BytesIO
 import hashlib
+from io import BytesIO
 from pathlib import Path
 from typing import Any, BinaryIO
-from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
+from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
 from banal import is_mapping
-
 
 DEFAULT_HASH_ALGORITHM = "sha1"
 
@@ -37,14 +36,14 @@ def ensure_uri(uri: Any) -> str:
     if uri == "-":  # stdin/stout
         return uri
     if isinstance(uri, Path):
-        return uri.absolute().as_uri()
+        return unquote(uri.absolute().as_uri())
     if isinstance(uri, str) and not uri.strip():
         raise ValueError(f"Invalid uri: `{uri}`")
     uri = str(uri)
     parsed = urlparse(uri)
     if parsed.scheme:
         return uri
-    return Path(uri).absolute().as_uri()
+    return unquote(Path(uri).absolute().as_uri())
 
 
 def join_uri(uri: Any, path: str) -> str:
