@@ -30,11 +30,6 @@ class RaisingThread(threading.Thread):
             raise self._exc
 
 
-class Stats(Counter):
-    def __getattr__(self, name: str, /) -> Any:
-        return self.__getitem__(name)
-
-
 class WorkerStatus(BaseModel):
     started: datetime | None = None
     stopped: datetime | None = None
@@ -79,7 +74,7 @@ class Worker:
         self.handle = handle
         self.handle_error = handle_error
         self.lock = threading.Lock()
-        self.stats = Stats()
+        self.counter = Counter()
         self.status_model = status_model or WorkerStatus
         self.status = status_model() if status_model else WorkerStatus()
         self.job_id = job_id or f"{self.__class__.__name__}-{time.time()}"
@@ -119,13 +114,14 @@ class Worker:
                 self.count(pending=-1)
                 self.count(done=1)
             except Exception as e:
+                self.count(pending=-1)
                 self.count(errors=1)
                 self.exception(task, e)
 
     def count(self, **kwargs) -> None:
         with self.lock:
             self.status.touch()
-            self.stats.update(**kwargs)
+            self.counter.update(**kwargs)
 
     def beat(self) -> None:
         last_beat = time.time() - self.heartbeat
@@ -140,7 +136,7 @@ class Worker:
         log.info(f"[{self.job_id}] 💚 ", **status.model_dump())
 
     def get_status(self) -> WorkerStatus:
-        return self.status_model(**{**self.status.model_dump(), **self.stats})
+        return self.status_model(**{**self.status.model_dump(), **self.counter})
 
     def exit(self, exc: Exception | None = None, status: int | None = 0):
         if exc is not None:

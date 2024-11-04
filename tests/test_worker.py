@@ -26,11 +26,13 @@ def test_worker(tmp_path):
     assert res.took
     assert res.took < timedelta(seconds=5)
     assert smart_read(tmp_path / "done") == b"yes"
+    assert not res.pending
 
     # only 1 worker
     worker = TestWorker(threads=1, heartbeat=1)
     res = worker.run()
     assert res.took > timedelta(seconds=5)
+    assert not res.pending
 
 
 def test_worker_simple():
@@ -40,6 +42,7 @@ def test_worker_simple():
     res = worker.run()
     assert res.took
     assert res.took < timedelta(seconds=5)
+    assert not res.pending
 
 
 def test_worker_errors():
@@ -56,6 +59,7 @@ def test_worker_errors():
     worker = TestWorker(tasks=range(1_000), heartbeat=1)
     res = worker.run()
     assert res.done + res.errors == 1_000
+    assert not res.pending
 
 
 def test_worker_custom_status():
@@ -70,3 +74,4 @@ def test_worker_custom_status():
     res = worker.run()
     assert isinstance(res, Status)
     assert res.items == -100
+    assert not res.pending

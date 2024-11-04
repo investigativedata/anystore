@@ -42,7 +42,7 @@ def ensure_uri(uri: Any) -> str:
     uri = str(uri)
     parsed = urlparse(uri)
     if parsed.scheme:
-        return uri
+        return unquote(uri)
     return unquote(Path(uri).absolute().as_uri())
 
 
