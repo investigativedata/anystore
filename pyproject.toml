@@ -73,7 +73,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest_env]
 REDIS_DEBUG = 1
+DEBUG = 1
 ANYSTORE_YAML_URI = "./tests/fixtures/store.yml"
 AWS_ACCESS_KEY_ID = "foo"
 AWS_SECRET_ACCESS_KEY = "bar"
-FSSPEC_ENDPOINT_URL = ""
+#FSSPEC_S3_ENDPOINT_URL = ""
