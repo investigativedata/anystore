@@ -1,11 +1,14 @@
 import hashlib
 from io import BytesIO
+from os.path import splitext
 from pathlib import Path
 from typing import Any, BinaryIO
 from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
 from banal import is_mapping
+
+from anystore.types import Uri
 
 DEFAULT_HASH_ALGORITHM = "sha1"
 
@@ -46,6 +49,11 @@ def ensure_uri(uri: Any) -> str:
     return unquote(Path(uri).absolute().as_uri())
 
 
+def path_from_uri(uri: Uri) -> Path:
+    uri = ensure_uri(uri)
+    return Path(uri[7:])  # file://
+
+
 def join_uri(uri: Any, path: str) -> str:
     # FIXME wtf
     uri = ensure_uri(uri)
@@ -75,3 +83,9 @@ def make_data_checksum(data: Any, algorithm: str = DEFAULT_HASH_ALGORITHM) -> st
 
 def make_signature_key(*args, **kwargs) -> str:
     return make_data_checksum((args, kwargs))
+
+
+def get_extension(uri: Uri) -> str | None:
+    _, ext = splitext(str(uri))
+    if ext:
+        return ext[1:].lower()

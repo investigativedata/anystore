@@ -1,7 +1,7 @@
 import contextlib
-from pathlib import Path
 import shutil
 import tempfile
+from pathlib import Path
 from typing import BinaryIO, Generator
 
 import shortuuid
@@ -9,6 +9,7 @@ import shortuuid
 from anystore.store import get_store, get_store_for_uri
 from anystore.store.base import BaseStore
 from anystore.types import Uri
+from anystore.util import get_extension
 
 
 class VirtualStore:
@@ -21,7 +22,8 @@ class VirtualStore:
         self.store = get_store(uri=self.path, serialization_mode="raw")
 
     def download(self, uri: Uri, store: BaseStore | None = None) -> str:
-        key = shortuuid.uuid()
+        ext = get_extension(uri) or ".lfc"
+        key = f"{shortuuid.uuid()}.{ext}"
         if store is None:
             store, uri = get_store_for_uri(uri, serialization_mode="raw")
         with store.open(uri, mode="rb") as i:
