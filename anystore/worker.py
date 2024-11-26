@@ -125,12 +125,9 @@ class Worker:
             self.counter.update(**kwargs)
 
     def beat(self) -> None:
-        last_beat = time.time() - self.heartbeat
         while self.status.running:
-            if time.time() - last_beat > self.heartbeat:
-                self.log_status()
-                last_beat = time.time()
-                time.sleep(1)
+            self.log_status()
+            time.sleep(max(self.heartbeat, 1))
 
     def log_status(self) -> None:
         status = self.get_status()
