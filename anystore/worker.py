@@ -108,7 +108,8 @@ class Worker:
             task = self.queue.get()
             if task is None:
                 self.queue.put(task)  # notify other consumers
-                break
+                if self.status.pending < 1:
+                    break
             try:
                 self.handle_task(task)
                 self.count(pending=-1)
