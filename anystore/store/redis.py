@@ -9,8 +9,9 @@ import redis
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
+from anystore.model import BaseStats
 from anystore.settings import Settings
-from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
+from anystore.store.base import BaseStore, VirtualIOMixin
 from anystore.types import Value
 from anystore.util import join_relpaths
 

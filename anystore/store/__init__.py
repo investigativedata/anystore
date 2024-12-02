@@ -1,5 +1,10 @@
-from functools import cache
+"""
+# Top-level store entrypoint
+"""
+
 import os
+from functools import cache
+from typing import Any
 from urllib.parse import urlparse
 
 from anystore.logging import get_logger
@@ -11,14 +16,37 @@ from anystore.store.zip import ZipStore
 from anystore.types import Uri
 from anystore.util import ensure_uri
 
-
 log = get_logger(__name__)
 
 
 @cache
 def get_store(
-    uri: str | None = None, settings: Settings | None = None, **kwargs
+    uri: str | None = None, settings: Settings | None = None, **kwargs: Any
 ) -> BaseStore:
+    """
+    Short-hand initializer for a new store. The call is cached during runtime if
+    input doesn't change.
+
+    Example:
+        ```python
+        from anystore import get_store
+
+        # initialize from current configuration
+        store = get_store()
+        # get a redis store with custom prefix
+        store = get_store("redis://localhost", backend_config={"redis_prefix": "foo"})
+        ```
+
+    Args:
+        uri: Store base uri, if relative it is considered as a local file store,
+             otherwise the store backend is inferred from the scheme. If omitted,
+             store is derived from settings defaults (taking current environment
+             into account).
+        **kwargs: pass through storage-specific options
+
+    Returns:
+        A `Store` class
+    """
     settings = settings or Settings()
     if uri is None:
         if settings.yaml_uri is not None:

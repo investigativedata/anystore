@@ -1,8 +1,9 @@
 import os
-import pytest
-from pathlib import Path
+from pathlib import Path, PosixPath
 
-from anystore import util, smart_read
+import pytest
+
+from anystore import smart_read, util
 
 
 def test_util_clean_dict():
@@ -24,6 +25,7 @@ def test_util_ensure_uri():
     assert util.ensure_uri("-") == "-"
     assert util.ensure_uri("./foo").startswith("file:///")
     assert util.ensure_uri(Path("./foo")).startswith("file:///")
+    assert util.ensure_uri("/foo") == "file:///foo"
 
     with pytest.raises(ValueError):
         assert util.ensure_uri("")
@@ -33,7 +35,7 @@ def test_util_ensure_uri():
         assert util.ensure_uri(" ")
 
 
-def test_util_join_uri():
+def test_util_uris():
     assert util.join_uri("http://example.org", "foo") == "http://example.org/foo"
     assert util.join_uri("http://example.org/", "foo") == "http://example.org/foo"
     assert util.join_uri("/tmp", "foo") == "file:///tmp/foo"
@@ -42,9 +44,16 @@ def test_util_join_uri():
     assert util.join_uri("s3://foo/bar.pdf", "../baz.txt") == "s3://foo/baz.txt"
     assert util.join_uri("redis://foo/bar.pdf", "../baz.txt") == "redis://foo/baz.txt"
 
+    assert util.join_relpaths("/a/b/c/", "d/e") == "a/b/c/d/e"
+
+    assert util.path_from_uri("/foo/bar") == PosixPath("/foo/bar")
+    assert util.path_from_uri("file:///foo/bar") == PosixPath("/foo/bar")
+
 
 def test_util_checksum(tmp_path, fixtures_path):
-    assert util.make_data_checksum("stable") == "b34d0813267b917b79d574726d2b0ac2e3929a87"
+    assert (
+        util.make_data_checksum("stable") == "b34d0813267b917b79d574726d2b0ac2e3929a87"
+    )
     assert len(util.make_data_checksum("a")) == 40
     assert len(util.make_data_checksum({"foo": "bar"})) == 40
     assert len(util.make_data_checksum(True)) == 40

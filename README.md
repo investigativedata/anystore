@@ -25,7 +25,7 @@ echo "hello" | anystore -o sftp://user:password@host:/tmp/world.txt
 
 anystore -i https://investigativedata.io > index.html
 
-anystore --store sqlite:///db keys <prefix> 
+anystore --store sqlite:///db keys <prefix>
 
 anystore --store redis://localhost put foo "bar"
 
@@ -42,7 +42,7 @@ smart_write(".local/data", data)
 
 #### Simple cache example via decorator:
 
-[`@anycache` is used for api view cache in `ftmq-api`](https://github.com/investigativedata/ftmstore-fastapi/blob/main/ftmstore_fastapi/views.py)
+Use case: [`@anycache` is used for api view cache in `ftmq-api`](https://github.com/investigativedata/ftmq-api/blob/main/ftmq_api/views.py)
 
 ```python
 from anystore import get_store, anycache
@@ -76,7 +76,7 @@ for path in source.iterate_keys():
 
 ## Documentation
 
-Find the docs at [investigativedata.io/docs/anystore](https://investigativedata.io/docs/anystore)
+Find the docs at [docs.investigraph.dev/lib/anystore](https://docs.investigraph.dev/lib/anystore)
 
 ## Used by
 

@@ -5,9 +5,9 @@ description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
 readme = "README.md"
-homepage = "https://github.com/investigativedata/anystore"
+homepage = "https://docs.investigraph.dev/lib/anystore"
 repository = "https://github.com/investigativedata/anystore"
-documentation = "https://github.com/investigativedata/anystore"
+documentation = "https://docs.investigraph.dev/lib/anystore"
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
@@ -66,6 +66,10 @@ bump2version = "^1.0.1"
 moto = "^5.0.11"
 pytest-asyncio = ">=0.23.8,<0.25.0"
 mkdocs-material = "^9.5.39"
+mkdocs-autorefs = "^1.2.0"
+mkdocstrings-python = "^1.12.2"
+griffe-pydantic = "^1.1.0"
+mkdocs-typer = "^0.0.3"
 
 [build-system]
 requires = ["poetry-core"]

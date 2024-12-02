@@ -1,8 +1,24 @@
 site_name: anystore
-site_url: https://investigativedata.io/docs/anystore
+site_url: https://docs.investigraph.dev/lib/anystore
 repo_url: https://github.com/investigativedata/anystore
 nav:
-  - Overview: index.md
+  - Intro: index.md
+  - quickstart.md
+  - Documentation:
+    - overview.md
+    - Basic usage: usage.md
+    - Use as blob storage: storage.md
+    - Use as cache backend: cache.md
+    - configuration.md
+    - serialization.md
+  - Reference:
+      - anystore.io: reference/io.md
+      - anystore.store: reference/store.md
+      - anystore.cli: reference/cli.md
+      - anystore.serialize: reference/serialize.md
+      - anystore.decorators: reference/decorators.md
+      - anystore.settings: reference/settings.md
+      - anystore.util: reference/util.md
 theme:
   name: material
   logo: https://cdn.investigativedata.org/style/logo_basic_dark.svg
@@ -32,3 +48,19 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - mkdocs-typer
+  - pymdownx.details
+  - admonition
+  - pymdownx.tasklist:
+      custom_checkbox: true
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: false
+            show_object_full_path: false

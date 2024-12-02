@@ -10,7 +10,8 @@ from fsspec.implementations.zip import ZipFileSystem
 
 from anystore.exceptions import DoesNotExist, ReadOnlyError
 from anystore.io import DEFAULT_MODE, DEFAULT_WRITE_MODE
-from anystore.store.base import BaseStats, BaseStore
+from anystore.model import BaseStats
+from anystore.store.base import BaseStore
 from anystore.types import Uri, Value
 from anystore.util import join_relpaths
 

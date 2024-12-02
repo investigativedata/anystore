@@ -25,12 +25,16 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.engine import Connection, Engine
 
 from anystore.exceptions import DoesNotExist
-from anystore.settings import SqlSettings
-from anystore.store.base import BaseStats, BaseStore, VirtualIOMixin
+from anystore.model import BaseStats
+from anystore.settings import Settings
+from anystore.store.base import BaseStore, VirtualIOMixin
 from anystore.types import Value
-from anystore.util import join_relpaths
+from anystore.util import clean_dict, join_relpaths
 
-settings = SqlSettings()
+settings = Settings()
+sql_settings = clean_dict(settings.backend_config.get("sql"))
+POOL_SIZE = 5
+TABLE_NAME = "anystore"
 
 Conn = Connection
 Connish = Optional[Connection]
@@ -39,7 +43,7 @@ Connish = Optional[Connection]
 @cache
 def get_engine(url: str, **kwargs) -> Engine:
     if "pool_size" not in kwargs:
-        kwargs["pool_size"] = settings.pool_size
+        kwargs["pool_size"] = sql_settings.get("pool_size") or POOL_SIZE
     return create_engine(url, **kwargs)
 
 
@@ -86,11 +90,10 @@ class SqlStore(VirtualIOMixin, BaseStore):
 
     def __init__(self, **data):
         super().__init__(**data)
-        backend_config = ensure_dict(self.backend_config)
-        engine_kwargs = ensure_dict(backend_config.get("engine_kwargs"))
+        engine_kwargs = ensure_dict(sql_settings.get("engine_kwargs"))
         metadata = get_metadata()
         engine = get_engine(self.uri, **engine_kwargs)
-        table = backend_config.get("table") or settings.table
+        table = sql_settings.get("table") or TABLE_NAME
         table = make_table(table, metadata)
         metadata.create_all(engine, tables=[table], checkfirst=True)
         self._insert = get_insert(engine)

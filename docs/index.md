@@ -8,75 +8,19 @@
 
 Store anything anywhere. `anystore` provides a high-level storage and retrieval interface for various supported _store_ backends, such as `redis`, `sql`, `file`, `http`, cloud-storages and anything else supported by [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/index.html).
 
-Think of it as a `key -> value` store, and `anystore` acts as a cache backend. And when _keys_ become filenames and _values_ become byte blobs, `anystore` becomes actually a file-like storage backend – but always with the same and interchangeable interface.
+Think of it as a `key -> value` store, and `anystore` acts as a [**cache backend**](./cache.md). And when _keys_ are filenames and _values_ are byte blobs, `anystore` becomes actually a [**file-like storage backend**](./storage.md) – but always with the same and interchangeable interface.
 
-### Why?
+## Quickstart
+
+    pip install anystore
+
+    anystore --help
+
+[Get started](./quickstart.md)
+
+## Why?
 
 [In our several data engineering projects](https://investigativedata.io/projects) we always wrote boilerplate code that handles the featureset of `anystore` but not in a reusable way. This library shall be a stable foundation for data wrangling related python projects.
-
-### Examples
-
-#### Base cli interface:
-
-```shell
-anystore -i ./local/foo.txt -o s3://mybucket/other.txt
-
-echo "hello" | anystore -o sftp://user:password@host:/tmp/world.txt
-
-anystore -i https://investigativedata.io > index.html
-
-anystore --store sqlite:///db keys <prefix> 
-
-anystore --store redis://localhost put foo "bar"
-
-anystore --store redis://localhost get foo  # -> "bar"
-```
-#### Use in your applications:
-
-```python
-from anystore import smart_read, smart_write
-
-data = smart_read("s3://mybucket/data.txt")
-smart_write(".local/data", data)
-```
-
-#### Simple cache example via decorator:
-
-[`@anycache` is used for api view cache in `ftmq-api`](https://github.com/investigativedata/ftmstore-fastapi/blob/main/ftmstore_fastapi/views.py)
-
-```python
-from anystore import get_store, anycache
-
-cache = get_store("redis://localhost")
-
-@anycache(store=cache, key_func=lambda q: f"api/list/{q.make_key()}", ttl=60)
-def get_list_view(q: Query) -> Response:
-    result = ... # complex computing will be cached
-    return result
-```
-
-#### Mirror file collections:
-
-```python
-from anystore import get_store
-
-source = get_store("https://example.org/documents/archive1")  # directory listing
-target = get_store("s3://mybucket/files", backend_config={"client_kwargs": {
-    "aws_access_key_id": "my-key",
-    "aws_secret_access_key": "***",
-    "endpoint_url": "https://s3.local"
-}})  # can be configured via ENV as well
-
-for path in source.iterate_keys():
-    # streaming copy:
-    with source.open(path) as i:
-        with target.open(path, "wb") as o:
-            i.write(o.read())
-```
-
-## Documentation
-
-Find the docs at [investigativedata.io/docs/anystore](https://investigativedata.io/docs/anystore)
 
 ## Used by
 
@@ -84,26 +28,3 @@ Find the docs at [investigativedata.io/docs/anystore](https://investigativedata.
 - [investigraph](https://github.com/investigativedata/investigraph)
 - [ftmq-api](https://github.com/investigativedata/ftmq-api)
 - [leakrfc](https://github.com/investigativedata/leakrfc)
-
-
-## Development
-
-This package is using [poetry](https://python-poetry.org/) for packaging and dependencies management, so first [install it](https://python-poetry.org/docs/#installation).
-
-Clone this repository to a local destination.
-
-Within the repo directory, run
-
-    poetry install --with dev
-
-This installs a few development dependencies, including [pre-commit](https://pre-commit.com/) which needs to be registered:
-
-    poetry run pre-commit install
-
-Before creating a commit, this checks for correct code formatting (isort, black) and some other useful stuff (see: `.pre-commit-config.yaml`)
-
-### testing
-
-`anystore` uses [pytest](https://docs.pytest.org/en/stable/) as the testing framework.
-
-    make test
