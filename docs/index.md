@@ -24,7 +24,7 @@ Think of it as a `key -> value` store, and `anystore` acts as a [**cache backend
 
 ## Used by
 
-- [ftmq](https://github.com/investigativedata/ftmq)
-- [investigraph](https://github.com/investigativedata/investigraph)
-- [ftmq-api](https://github.com/investigativedata/ftmq-api)
-- [leakrfc](https://github.com/investigativedata/leakrfc)
+- [ftmq](https://github.com/investigativedata/ftmq), a query interface layer for [followthemoney](https://followthemoney.tech) data
+- [investigraph](https://github.com/investigativedata/investigraph),  a framework to manage collections of structured [followthemoney](https://followthemoney.tech) data
+- [ftmq-api](https://github.com/investigativedata/ftmq-api), a simple api on top off `ftmq` built with [FastApi](https://fastapi.tiangolo.com/)
+- [leakrfc](https://github.com/investigativedata/leakrfc), a library to crawl, sync and move around document collections (in progress)
