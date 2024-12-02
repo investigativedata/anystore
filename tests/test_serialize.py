@@ -1,4 +1,5 @@
 import pytest
+
 from anystore import serialize
 from anystore.mixins import BaseModel
 
@@ -62,8 +63,10 @@ def test_serialize():
         serialize.to_store(func, serialization_mode="json")
 
     # mode: raw
-    assert serialize.to_store("str value", serialization_mode="raw") == "str value"
     assert serialize.from_store(b"str value", serialization_mode="raw") == b"str value"
+    # bytes enforced
+    with pytest.raises(ValueError):
+        serialize.to_store("str value", serialization_mode="raw")
 
     # explicit de-/serialization
     assert (

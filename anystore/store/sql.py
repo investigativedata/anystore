@@ -1,5 +1,6 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from functools import cache
+from operator import and_
 from typing import Generator, Optional, Union
 
 from banal import ensure_dict
@@ -24,12 +25,16 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.engine import Connection, Engine
 
 from anystore.exceptions import DoesNotExist
-from anystore.settings import SqlSettings
-from anystore.store.base import BaseStore
+from anystore.model import BaseStats
+from anystore.settings import Settings
+from anystore.store.base import BaseStore, VirtualIOMixin
 from anystore.types import Value
+from anystore.util import clean_dict, join_relpaths
 
-
-settings = SqlSettings()
+settings = Settings()
+sql_settings = clean_dict(settings.backend_config.get("sql"))
+POOL_SIZE = 5
+TABLE_NAME = "anystore"
 
 Conn = Connection
 Connish = Optional[Connection]
@@ -38,11 +43,11 @@ Connish = Optional[Connection]
 @cache
 def get_engine(url: str, **kwargs) -> Engine:
     if "pool_size" not in kwargs:
-        kwargs["pool_size"] = settings.pool_size
+        kwargs["pool_size"] = sql_settings.get("pool_size") or POOL_SIZE
     return create_engine(url, **kwargs)
 
 
-@cache
+# @cache
 def get_metadata() -> MetaData:
     return MetaData()
 
@@ -72,10 +77,11 @@ def make_table(name: str, metadata: MetaData) -> Table:
             server_default=func.now(),
         ),
         Column("ttl", Integer(), nullable=True),
+        # extend_existing=True,  # FIXME?
     )
 
 
-class SqlStore(BaseStore):
+class SqlStore(VirtualIOMixin, BaseStore):
     _engine: Engine | None = None
     _conn: Connection | None = None
     _insert: Insert | None = None
@@ -84,11 +90,10 @@ class SqlStore(BaseStore):
 
     def __init__(self, **data):
         super().__init__(**data)
-        backend_config = ensure_dict(self.backend_config)
-        engine_kwargs = ensure_dict(backend_config.get("engine_kwargs"))
+        engine_kwargs = ensure_dict(sql_settings.get("engine_kwargs"))
         metadata = get_metadata()
         engine = get_engine(self.uri, **engine_kwargs)
-        table = backend_config.get("table") or settings.table
+        table = sql_settings.get("table") or TABLE_NAME
         table = make_table(table, metadata)
         metadata.create_all(engine, tables=[table], checkfirst=True)
         self._insert = get_insert(engine)
@@ -98,6 +103,8 @@ class SqlStore(BaseStore):
         self._sqlite = "sqlite" in engine.name.lower()
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
+        if not isinstance(value, bytes):
+            value = value.encode()
         ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
         exists = select(self._table).where(self._table.c.key == key)
@@ -138,6 +145,14 @@ class SqlStore(BaseStore):
             return bool(res)
         return False
 
+    def _info(self, key: str) -> BaseStats:
+        stmt = select(self._table).where(self._table.c.key == key)
+        res = self._conn.execute(stmt).first()
+        if res:
+            key, value, ts, ttl = res
+            return BaseStats(created_at=ts, size=len(value))
+        raise DoesNotExist
+
     def _delete(self, key: str) -> None:
         stmt = delete(self._table).where(self._table.c.key == key)
         self._conn.execute(stmt)
@@ -145,17 +160,27 @@ class SqlStore(BaseStore):
     def _get_key_prefix(self) -> str:
         return ""
 
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         table = self._table
-        key = self.get_key(prefix or "")
-        if not prefix:
-            stmt = select(table.c.key)
-        else:
-            key = f"{key}%"
-            stmt = select(table.c.key).where(table.c.key.like(key))
+        key_prefix = self.get_key(prefix or "")
+        key_prefix = join_relpaths(key_prefix, (glob or "*").replace("*", "%"))
+        stmt = select(table.c.key).where(table.c.key.like(key_prefix))
+        if exclude_prefix:
+            stmt = select(table.c.key).where(
+                and_(
+                    table.c.key.like(key_prefix),
+                    table.c.key.not_like(f"{self.get_key(exclude_prefix)}%"),
+                )
+            )
         with self._engine.connect() as conn:
             conn = conn.execution_options(stream_results=True)
             cursor = conn.execute(stmt)
             while rows := cursor.fetchmany(10_000):
                 for row in rows:
-                    yield row[0]
+                    key = row[0]
+                    yield key.strip("/")

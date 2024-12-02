@@ -1,8 +1,11 @@
 import asyncio
+
 import pytest
+from pydantic import BaseModel
+
 from anystore.decorators import anycache, async_anycache
-from anystore.util import make_signature_key
 from anystore.store import get_store
+from anystore.util import make_signature_key
 
 
 def test_decorator(tmp_path):
@@ -41,6 +44,28 @@ def test_decorator(tmp_path):
     assert get_data4(5) == [0, 1, 2, 3, 4]
     # now from cache:
     assert get_data4(5) == [0, 1, 2, 3, 4]
+
+    # model
+    class Model(BaseModel):
+        data: int
+
+    @anycache(uri=tmp_path, model=Model)
+    def get_data5(x: int) -> Model:
+        return Model(data=x)
+
+    model = get_data5(1)
+    cached = get_data5(1)
+    assert model.data == cached.data == 1
+    assert isinstance(cached, Model)
+
+    @anycache(store=store, model=Model)
+    def get_data6(x: int) -> Model:
+        return Model(data=x)
+
+    model = get_data6(1)
+    cached = get_data6(1)
+    assert model.data == cached.data == 1
+    assert isinstance(cached, Model)
 
 
 def test_decorator_no_args(monkeypatch):

@@ -6,100 +6,93 @@
 
 # anystore
 
-Store anything anywhere. A wrapper around wrappers to avoid boilerplate code (because we are lazy).
+Store anything anywhere. `anystore` provides a high-level storage and retrieval interface for various supported _store_ backends, such as `redis`, `sql`, `file`, `http`, cloud-storages and anything else supported by [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/index.html).
 
-`anystore` helps you to transfer data from and to a various range of sources (local filesystem, http, s3, redis, sql, ...) with a unified high-level interface. It's main use case is to store data pipeline outcomes in a distributed cache, so that different programs or coworkers can access intermediate results based on different settings (e.g. testing: use local cache store, production: cache to s3 bucket)
+Think of it as a `key -> value` store, and `anystore` acts as a cache backend. And when _keys_ become filenames and _values_ become byte blobs, `anystore` becomes actually a file-like storage backend – but always with the same and interchangeable interface.
 
 ### Why?
 
-[In our several data engineering projects](https://investigativedata.io/#projects) we always wrote boilerplate code that handles the featureset of `anystore` but not in a reusable way.
+[In our several data engineering projects](https://investigativedata.io/projects) we always wrote boilerplate code that handles the featureset of `anystore` but not in a reusable way. This library shall be a stable foundation for data wrangling related python projects.
 
-This library shall be a thin and stable foundation for data wrangling related python programs.
+### Examples
 
-## Overview
+#### Base cli interface:
 
-`anystore` is built on top of [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/index.html) and provides an easy wrapper for reading and writing content from and to arbitrary locations:
-
-### command line
-
-```bash
+```shell
 anystore -i ./local/foo.txt -o s3://mybucket/other.txt
 
 echo "hello" | anystore -o sftp://user:password@host:/tmp/world.txt
 
 anystore -i https://investigativedata.io > index.html
-```
 
-### python
+anystore --store sqlite:///db keys <prefix>
+
+anystore --store redis://localhost put foo "bar"
+
+anystore --store redis://localhost get foo  # -> "bar"
+```
+#### Use in your applications:
 
 ```python
-from anystore.io import smart_read, smart_write
+from anystore import smart_read, smart_write
 
 data = smart_read("s3://mybucket/data.txt")
 smart_write(".local/data", data)
 ```
 
-## Simple key/value store
+#### Simple cache example via decorator:
 
-`anystore` can use a configurable store:
-
-### command line
-
-```bash
-anystore --store .cache put foo "bar"
-
-anystore --store .cache get foo
-# "bar"
-```
-
-### python
+Use case: [`@anycache` is used for api view cache in `ftmq-api`](https://github.com/investigativedata/ftmq-api/blob/main/ftmq_api/views.py)
 
 ```python
-from anystore import Store
+from anystore import get_store, anycache
 
-# pass through `fsspec` configuration for specific storage backend:
-store = Store(uri="s3://mybucket/data", backend_config={"client_kwargs":{
+cache = get_store("redis://localhost")
+
+@anycache(store=cache, key_func=lambda q: f"api/list/{q.make_key()}", ttl=60)
+def get_list_view(q: Query) -> Response:
+    result = ... # complex computing will be cached
+    return result
+```
+
+#### Mirror file collections:
+
+```python
+from anystore import get_store
+
+source = get_store("https://example.org/documents/archive1")  # directory listing
+target = get_store("s3://mybucket/files", backend_config={"client_kwargs": {
     "aws_access_key_id": "my-key",
     "aws_secret_access_key": "***",
     "endpoint_url": "https://s3.local"
-}})
+}})  # can be configured via ENV as well
 
-store.get("/2023/1.txt")
-store.put("/2023/2.txt", my_data)
+for path in source.iterate_keys():
+    # streaming copy:
+    with source.open(path) as i:
+        with target.open(path, "wb") as o:
+            i.write(o.read())
 ```
 
-## Decorate your functions
+## Documentation
 
-When working on scripts, one sometimes wants just a simple cache setup. Maybe it should be persistent, maybe even somewhere in the cloud so that another coworker can take over. Maybe we want a different storage during testing our scripts... everything easily handled by `anystore`:
+Find the docs at [docs.investigraph.dev/lib/anystore](https://docs.investigraph.dev/lib/anystore)
 
-```python
-from anystore import anycache
+## Used by
 
-# use decorator
-@anycache(uri="s3://mybucket/cache")
-def download_file(url):
-    # a very time consuming task
-    return result
-
-# 1. time: slow
-res = download_file("https://example.com/foo.txt")
-
-# 2. time: fast, as now cached
-res = download_file("https://example.com/foo.txt")
-```
-
-## Install
-
-    pip install anystore
+- [ftmq](https://github.com/investigativedata/ftmq), a query interface layer for [followthemoney](https://followthemoney.tech) data
+- [investigraph](https://github.com/investigativedata/investigraph),  a framework to manage collections of structured [followthemoney](https://followthemoney.tech) data
+- [ftmq-api](https://github.com/investigativedata/ftmq-api), a simple api on top off `ftmq` built with [FastApi](https://fastapi.tiangolo.com/)
+- [leakrfc](https://github.com/investigativedata/leakrfc), a library to crawl, sync and move around document collections (in progress)
 
 
-## development
+## Development
 
 This package is using [poetry](https://python-poetry.org/) for packaging and dependencies management, so first [install it](https://python-poetry.org/docs/#installation).
 
 Clone this repository to a local destination.
 
-Within the root directory, run
+Within the repo directory, run
 
     poetry install --with dev
 
@@ -109,6 +102,8 @@ This installs a few development dependencies, including [pre-commit](https://pre
 
 Before creating a commit, this checks for correct code formatting (isort, black) and some other useful stuff (see: `.pre-commit-config.yaml`)
 
-### test
+### testing
+
+`anystore` uses [pytest](https://docs.pytest.org/en/stable/) as the testing framework.
 
     make test

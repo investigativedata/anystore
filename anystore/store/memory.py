@@ -3,19 +3,21 @@ Simple memory dictionary store
 """
 
 from datetime import datetime, timedelta
+from fnmatch import fnmatch
 from typing import Any, Generator
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
-from anystore.store.base import BaseStore
+from anystore.model import BaseStats
+from anystore.store.base import BaseStore, VirtualIOMixin
 from anystore.types import Value
-
 
 log = get_logger(__name__)
 
 
-class MemoryStore(BaseStore):
+class MemoryStore(VirtualIOMixin, BaseStore):
     def __init__(self, **data):
+        data["uri"] = "memory://"
         super().__init__(**data)
         self._store: dict[str, Any] = {}
         self._ttl: dict[str, datetime] = {}
@@ -42,18 +44,26 @@ class MemoryStore(BaseStore):
         self._check_ttl(key)
         return key in self._store
 
+    def _info(self, key: str) -> BaseStats:
+        self._check_ttl(key)
+        data = self._read(key)
+        return BaseStats(size=len(data))
+
     def _delete(self, key: str) -> None:
         self._store.pop(key, None)
 
-    def _get_key_prefix(self) -> str:
-        return "anystore"
-
-    def _iterate_keys(self, prefix: str | None = None) -> Generator[str, None, None]:
+    def _iterate_keys(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+    ) -> Generator[str, None, None]:
         prefix = self.get_key(prefix or "")
-        key_prefix = self._get_key_prefix()
         for key in self._store:
             if key.startswith(prefix):
-                yield key[len(key_prefix) + 1 :]
+                if not exclude_prefix or not key.startswith(exclude_prefix):
+                    if not glob or fnmatch(key, glob):
+                        yield key
 
     def _check_ttl(self, key: str) -> None:
         ttl = self._ttl.get(key)
