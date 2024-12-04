@@ -83,7 +83,10 @@ def test_decorator_no_args(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_decorator_async():
+async def test_decorator_async(monkeypatch):
+    get_store.cache_clear()
+    monkeypatch.delenv("ANYSTORE_YAML_URI")
+
     @async_anycache
     async def get_data6(x):
         await asyncio.sleep(1)
