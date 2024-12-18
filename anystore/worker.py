@@ -99,9 +99,12 @@ class Worker:
 
     def produce(self) -> None:
         for task in self.get_tasks():
-            self.count(pending=1)
-            self.queue.put(task)
+            self.queue_task(task)
         self.queue.put(None)
+
+    def queue_task(self, task: Any) -> None:
+        self.count(pending=1)
+        self.queue.put(task)
 
     def consume(self) -> None:
         while True:
@@ -125,9 +128,12 @@ class Worker:
             self.counter.update(**kwargs)
 
     def beat(self) -> None:
+        last_beat = time.time() - self.heartbeat
         while self.status.running:
-            self.log_status()
-            time.sleep(max(self.heartbeat, 1))
+            if time.time() - last_beat > self.heartbeat:
+                self.log_status()
+                last_beat = time.time()
+                time.sleep(1)
 
     def log_status(self) -> None:
         status = self.get_status()

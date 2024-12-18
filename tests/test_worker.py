@@ -75,3 +75,16 @@ def test_worker_custom_status():
     assert isinstance(res, Status)
     assert res.items == -100
     assert not res.pending
+
+
+def test_worker_requeue_during_run():
+
+    class TestWorker(Worker):
+        def handle_task(self, task: Any) -> Any:
+            if task > 50:
+                self.queue_task(1)
+
+    worker = TestWorker(tasks=range(100))
+    res = worker.run()
+    assert res.done == 149
+    assert res.pending == 0
