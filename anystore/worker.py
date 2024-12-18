@@ -99,9 +99,12 @@ class Worker:
 
     def produce(self) -> None:
         for task in self.get_tasks():
-            self.count(pending=1)
-            self.queue.put(task)
+            self.queue_task(task)
         self.queue.put(None)
+
+    def queue_task(self, task: Any) -> None:
+        self.count(pending=1)
+        self.queue.put(task)
 
     def consume(self) -> None:
         while True:
