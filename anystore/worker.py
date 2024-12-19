@@ -111,16 +111,17 @@ class Worker:
             task = self.queue.get()
             if task is None:
                 self.queue.put(task)  # notify other consumers
-                if self.status.pending < 1:
+                if self.counter["pending"] < 1:
                     break
-            try:
-                self.handle_task(task)
-                self.count(pending=-1)
-                self.count(done=1)
-            except Exception as e:
-                self.count(pending=-1)
-                self.count(errors=1)
-                self.exception(task, e)
+            else:
+                try:
+                    self.handle_task(task)
+                    self.count(pending=-1)
+                    self.count(done=1)
+                except Exception as e:
+                    self.count(pending=-1)
+                    self.count(errors=1)
+                    self.exception(task, e)
 
     def count(self, **kwargs) -> None:
         with self.lock:
@@ -156,9 +157,10 @@ class Worker:
         try:
             log.info(f"Using `{self.consumer_threads}` consumer threads.")
             self.status.start()
-            heartbeat = RaisingThread(target=self.beat)
+            if self.heartbeat > 0:
+                heartbeat = RaisingThread(target=self.beat)
+                heartbeat.start()
             producer = RaisingThread(target=self.produce)
-            heartbeat.start()
             for _ in range(self.consumer_threads):
                 consumer = RaisingThread(target=self.consume)
                 consumer.start()
