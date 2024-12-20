@@ -1,4 +1,5 @@
 import hashlib
+import shutil
 from io import BytesIO
 from os.path import splitext
 from pathlib import Path
@@ -269,3 +270,17 @@ def get_extension(uri: Uri) -> str | None:
     _, ext = splitext(str(uri))
     if ext:
         return ext[1:].lower()
+
+
+def rm_rf(uri: Uri) -> None:
+    """
+    like rm -rf, ignoring errors.
+    """
+    try:
+        p = Path(uri)
+        if p.is_dir():
+            shutil.rmtree(str(p), ignore_errors=True)
+        else:
+            p.unlink()
+    except Exception:
+        pass
