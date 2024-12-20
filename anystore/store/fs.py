@@ -10,10 +10,10 @@ import fsspec
 
 from anystore.exceptions import DoesNotExist
 from anystore.io import smart_open, smart_read, smart_write
-from anystore.model import SCHEME_S3, BaseStats
+from anystore.model import BaseStats
 from anystore.store.base import BaseStore
 from anystore.types import Value
-from anystore.util import join_relpaths, join_uri
+from anystore.util import SCHEME_S3, join_relpaths, join_uri
 
 
 class Store(BaseStore):
