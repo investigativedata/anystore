@@ -30,7 +30,8 @@ class AbstractBackend:
         """
         Stream key line by line from actual backend
         """
-        kwargs["mode"] = "rb"
+        if kwargs.get("mode") not in ["rb", "r"]:
+            kwargs["mode"] = "rb"
         with self._open(key, **kwargs) as i:
             while line := i.readline():
                 yield line

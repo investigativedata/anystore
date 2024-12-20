@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.2.0"
+version = "0.2.1"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -34,7 +34,7 @@ fsspec = ">2023.10,<2025"
 s3fs = ">2023.10,<2025"
 gcsfs = ">2023.10,<2025"
 adlfs = ">2023.10,<2025"
-typer = ">=0.9,<0.15"
+typer = ">=0.9,<0.16"
 pyaml = ">=23.12,<25.0"
 cloudpickle = "^3.0.0"
 pydantic-settings = "^2.2.1"

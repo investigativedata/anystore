@@ -15,14 +15,9 @@ from anystore.mixins import BaseModel
 from anystore.serialize import Mode
 from anystore.settings import Settings
 from anystore.types import Model
-from anystore.util import ensure_uri, join_uri
+from anystore.util import SCHEME_FILE, SCHEME_MEMORY, SCHEME_REDIS, ensure_uri, join_uri
 
 settings = Settings()
-
-SCHEME_FILE = "file"
-SCHEME_S3 = "s3"
-SCHEME_REDIS = "redis"
-SCHEME_MEMORY = "memory"
 
 
 class BaseStats(BaseModel):

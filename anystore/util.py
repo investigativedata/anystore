@@ -1,4 +1,5 @@
 import hashlib
+import shutil
 from io import BytesIO
 from os.path import splitext
 from pathlib import Path
@@ -11,6 +12,10 @@ from banal import is_mapping
 from anystore.types import Uri
 
 DEFAULT_HASH_ALGORITHM = "sha1"
+SCHEME_FILE = "file"
+SCHEME_S3 = "s3"
+SCHEME_REDIS = "redis"
+SCHEME_MEMORY = "memory"
 
 
 def _clean(val: Any) -> Any:
@@ -99,13 +104,32 @@ def path_from_uri(uri: Uri) -> Path:
         Path("/foo/bar")
 
     Args:
-        uri: Full path-like uri
+        uri: (Full) path-like uri
 
     Returns:
         Path object for given uri
     """
     uri = ensure_uri(uri)
+    if urlparse(uri).scheme != SCHEME_FILE:
+        raise NotImplementedError(f"Wrong scheme: `{uri}`")
     return Path(uri[7:])  # file://
+
+
+def name_from_uri(uri: Uri) -> str:
+    """
+    Extract the file name from an uri.
+
+    Examples:
+        >>> name_from_uri("/foo/bar.txt")
+        bar.txt
+
+    Args:
+        uri: (Full) path-like uri
+
+    Returns:
+        File name
+    """
+    return path_from_uri(uri).name
 
 
 def join_uri(uri: Any, path: str) -> str:
@@ -246,3 +270,17 @@ def get_extension(uri: Uri) -> str | None:
     _, ext = splitext(str(uri))
     if ext:
         return ext[1:].lower()
+
+
+def rm_rf(uri: Uri) -> None:
+    """
+    like rm -rf, ignoring errors.
+    """
+    try:
+        p = Path(uri)
+        if p.is_dir():
+            shutil.rmtree(str(p), ignore_errors=True)
+        else:
+            p.unlink()
+    except Exception:
+        pass
