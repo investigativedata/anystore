@@ -2,10 +2,11 @@ import random
 import threading
 import time
 from datetime import timedelta
+from io import BytesIO
 from typing import Any, Generator
 
 from anystore.io import smart_read, smart_write
-from anystore.worker import Worker, WorkerStatus
+from anystore.worker import Worker, WorkerStatus, Writer, WriteWorker
 
 
 def test_worker(tmp_path):
@@ -88,3 +89,25 @@ def test_worker_requeue_during_run():
     res = worker.run()
     assert res.done == 149
     assert res.pending == 0
+
+
+def test_worker_writer(tmp_path):
+    out = BytesIO()
+    writer = Writer(out)
+
+    class TestWorker(WriteWorker):
+        def handle_task(self, task: Any) -> Any:
+            if task in (10, 99):
+                self.write(str(task).encode() + b"\n")
+
+    worker = TestWorker(writer, tasks=range(100))
+    res = worker.run()
+    assert res.done == 100
+    assert out.getvalue() == b"10\n99\n"
+
+    out = tmp_path / "result"
+    writer = Writer(out)
+    worker = TestWorker(writer, tasks=range(100))
+    res = worker.run()
+    assert res.done == 100
+    assert smart_read(out) == b"10\n99\n"
