@@ -26,6 +26,7 @@ Python usage:
 
 import contextlib
 import sys
+from io import BytesIO, StringIO
 from os import PathLike
 from pathlib import Path
 from typing import IO, Any, AnyStr, BinaryIO, Generator, TextIO, TypeAlias
@@ -58,7 +59,7 @@ class SmartHandler:
         uri: Uri,
         **kwargs: Any,
     ) -> None:
-        self.uri = ensure_uri(uri)
+        self.uri = uri
         self.is_buffer = self.uri == "-"
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
@@ -70,11 +71,14 @@ class SmartHandler:
     def open(self) -> IO[AnyStr]:
         try:
             if self.is_buffer:
-                self.handler = self.sys_io
+                return self.sys_io
+            elif isinstance(self.uri, (BytesIO, StringIO)):
+                return self.uri
             else:
+                self.uri = ensure_uri(self.uri)
                 handler: OpenFile = open(self.uri, **self.kwargs)
                 self.handler = handler.open()
-            return self.handler
+                return self.handler
         except FileNotFoundError as e:
             raise DoesNotExist from e
 
