@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="anystore_")
 
-    uri: str | None = ".anystore"
+    uri: str = ".anystore"
     """Default store base uri"""
 
     yaml_uri: str | None = None
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     json_uri: str | None = None
     """Load a (remote) store configuration (json) from this uri"""
 
-    serialization_mode: Mode | None = "auto"
+    serialization_mode: Mode = "auto"
     """Default serialization mode, one of ("auto", "pickle", "json", "raw")"""
 
     raise_on_nonexist: bool = True
