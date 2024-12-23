@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime, timedelta
 from functools import cache
 from operator import and_
@@ -83,7 +84,6 @@ def make_table(name: str, metadata: MetaData) -> Table:
 
 class SqlStore(VirtualIOMixin, BaseStore):
     _engine: Engine | None = None
-    _conn: Connection | None = None
     _insert: Insert | None = None
     _table: Table | None = None
     _sqlite: bool | None = True
@@ -99,31 +99,46 @@ class SqlStore(VirtualIOMixin, BaseStore):
         self._insert = get_insert(engine)
         self._table = table
         self._engine = engine
-        self._conn = engine.connect()
         self._sqlite = "sqlite" in engine.name.lower()
+        self._local = threading.local()
+
+    def _get_conn(self) -> Connection:
+        if not hasattr(self._local, "conn"):
+            self._local.conn = self._engine.connect()
+        return self._local.conn
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         if not isinstance(value, bytes):
             value = value.encode()
         ttl = kwargs.pop("ttl", None) or None
         # FIXME on conflict / on duplicate key
-        exists = select(self._table).where(self._table.c.key == key)
-        if self._conn.execute(exists).first():
+        # exists = select(self._table).where(self._table.c.key == key)
+        # if self._conn.execute(exists).first():
+        #     stmt = (
+        #         update(self._table)
+        #         .where(self._table.c.key == key)
+        #         .values(value=value, ttl=ttl)
+        #     )
+        # else:
+        conn = self._get_conn()
+        stmt = insert(self._table).values(key=key, value=value, ttl=ttl)
+        try:
+            conn.execute(stmt)
+        except Exception:
             stmt = (
                 update(self._table)
                 .where(self._table.c.key == key)
                 .values(value=value, ttl=ttl)
             )
-        else:
-            stmt = insert(self._table).values(key=key, value=value, ttl=ttl)
-        self._conn.execute(stmt)
-        self._conn.commit()
+            conn.execute(stmt)
+        conn.commit()
 
     def _read(
         self, key: str, raise_on_nonexist: bool | None = True, **kwargs
     ) -> Value | None:
+        conn = self._get_conn()
         stmt = select(self._table).where(self._table.c.key == key)
-        res = self._conn.execute(stmt).first()
+        res = conn.execute(stmt).first()
         if res:
             key, value, ts, ttl = res
             if ttl and ts + timedelta(seconds=ttl) < datetime.utcnow():  # FIXME
@@ -139,23 +154,26 @@ class SqlStore(VirtualIOMixin, BaseStore):
             raise DoesNotExist
 
     def _exists(self, key: str) -> bool:
+        conn = self._get_conn()
         stmt = select(self._table).where(self._table.c.key == key)
         stmt = select(stmt.exists())
-        for res in self._conn.execute(stmt).first():
+        for res in conn.execute(stmt).first():
             return bool(res)
         return False
 
     def _info(self, key: str) -> BaseStats:
+        conn = self._get_conn()
         stmt = select(self._table).where(self._table.c.key == key)
-        res = self._conn.execute(stmt).first()
+        res = conn.execute(stmt).first()
         if res:
             key, value, ts, ttl = res
             return BaseStats(created_at=ts, size=len(value))
         raise DoesNotExist
 
     def _delete(self, key: str) -> None:
+        conn = self._get_conn()
         stmt = delete(self._table).where(self._table.c.key == key)
-        self._conn.execute(stmt)
+        conn.execute(stmt)
 
     def _get_key_prefix(self) -> str:
         return ""
