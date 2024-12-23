@@ -48,9 +48,13 @@ GenericIO: TypeAlias = OpenFile | TextIO | BinaryIO
 
 
 def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:
-    if mode and mode.startswith("r"):
-        return sys.stdin
-    return sys.stdout
+    if mode and "r" in mode:
+        io = sys.stdin
+    else:
+        io = sys.stdout
+    if mode and "b" in mode:
+        return io.buffer
+    return io
 
 
 class SmartHandler:
@@ -63,8 +67,6 @@ class SmartHandler:
         self.is_buffer = self.uri == "-"
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
-        if hasattr(self.sys_io, "buffer"):
-            self.sys_io = self.sys_io.buffer
         self.kwargs = kwargs
         self.handler: IO | None = None
 
