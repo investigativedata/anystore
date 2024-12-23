@@ -211,16 +211,22 @@ class Writer:
         uri = ensure_uri(self.uri)
         return uri == "-" or uri.startswith("file://")
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: Any) -> None:
         if self.can_write_parallel:
-            smart_write(self.uri, data, "ab")
+            self._write_parallel(data)
         else:
             self.buffer.append(data)
 
     def flush(self) -> None:
         if not self.can_write_parallel and self.buffer:
-            with smart_open(ensure_uri(self.uri)) as f:
-                f.writelines(self.buffer)
+            self._write_flush()
+
+    def _write_parallel(self, data: Any) -> None:
+        smart_write(self.uri, data, "ab")
+
+    def _write_flush(self) -> None:
+        with smart_open(ensure_uri(self.uri)) as f:
+            f.writelines(self.buffer)
 
 
 class WriteWorker(Worker):
