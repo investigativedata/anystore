@@ -269,6 +269,8 @@ def get_extension(uri: Uri) -> str | None:
     Returns:
         Extension or `None`
     """
+    if isinstance(uri, (BytesIO, StringIO)):
+        return None
     _, ext = splitext(str(uri))
     if ext:
         return ext[1:].lower()

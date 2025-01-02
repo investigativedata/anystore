@@ -29,7 +29,17 @@ import sys
 from io import BytesIO, StringIO
 from os import PathLike
 from pathlib import Path
-from typing import IO, Any, AnyStr, BinaryIO, Generator, TextIO, TypeAlias
+from typing import (
+    IO,
+    Any,
+    AnyStr,
+    BinaryIO,
+    Generator,
+    Iterable,
+    TextIO,
+    TypeAlias,
+    TypeVar,
+)
 
 from fsspec import open
 from fsspec.core import OpenFile
@@ -45,6 +55,7 @@ DEFAULT_WRITE_MODE = "wb"
 
 Uri: TypeAlias = PathLike | Path | BinaryIO | TextIO | str
 GenericIO: TypeAlias = OpenFile | TextIO | BinaryIO
+T = TypeVar("T")
 
 
 def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:
@@ -190,3 +201,32 @@ def smart_write(
             content = content.encode()
     with smart_open(uri, mode, **kwargs) as fh:
         fh.write(content)
+
+
+def logged_io_items(
+    items: Iterable[T], uri: Uri, action: str, chunk_size: int | None = 10_000
+) -> Generator[T, None, None]:
+    """
+    Log process of iterating items for io operations.
+
+    Args:
+        items: Sequence of any items
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or `s3://mybucket/foo`
+        action: Action to log
+        chunk_size: Log on every chunk_size
+
+    Yields:
+        The input items
+    """
+    chunk_size = chunk_size or 10_000
+    ix = 0
+    model = "Item"
+    for ix, item in enumerate(items, 1):
+        if ix == 1:
+            model = item.__class__.__name__.title()
+        if ix % chunk_size == 0:
+            model = item.__class__.__name__.title()
+            log.info(f"{action} `{model}` {ix} ...", uri=ensure_uri(uri))
+        yield item
+    if ix:
+        log.info(f"{action} {ix} `{model}s`: Done.", uri=ensure_uri(uri))
