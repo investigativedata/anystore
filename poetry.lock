@@ -2545,13 +2545,13 @@ tests = ["pytest"]
 
 [[package]]
 name = "pyaml"
-version = "24.12.1"
+version = "25.1.0"
 description = "PyYAML-based module to produce a bit more pretty and readable YAML-serialized data"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pyaml-24.12.1-py3-none-any.whl", hash = "sha256:97ed4d31ecc1d7bb93f3d2a66e53548c53d6f572d75d166957abc64a06033b76"},
-    {file = "pyaml-24.12.1.tar.gz", hash = "sha256:3938c2b47924ed74524f844961a011852f7968fb8cc7b3933276087c5d1e45b3"},
+    {file = "pyaml-25.1.0-py3-none-any.whl", hash = "sha256:f7b40629d2dae88035657c860f539db3525ddd0120a11e0bcb44d47d5968b3bc"},
+    {file = "pyaml-25.1.0.tar.gz", hash = "sha256:33a93ac49218f57e020b81e280d2706cea554ac5a76445ac79add760d019c709"},
 ]
 
 [package.dependencies]
@@ -3811,4 +3811,4 @@ sql = ["sqlalchemy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4"
-content-hash = "e7fd4122f968ffeb6bddbaff580ff07a750f3d1aa5e117fc8ebd7290f5ef06d6"
+content-hash = "02cf978554442f614c6f6be7652fdb945f6d9438970d2c95ac77cb32b4fa268b"
