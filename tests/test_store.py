@@ -168,6 +168,11 @@ def _test_store(fixtures_path, uri: str, can_delete: bool | None = True) -> bool
     assert store.get("foo2 bar") == "baz"
     assert store.get("foo2%20bar") == "baz"
 
+    # handling of none
+    store.store_none_values = False
+    store.put("nothing", None)
+    assert not store.exists("nothing")
+
     return True
 
 

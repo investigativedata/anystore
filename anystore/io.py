@@ -26,9 +26,20 @@ Python usage:
 
 import contextlib
 import sys
+from io import BytesIO, StringIO
 from os import PathLike
 from pathlib import Path
-from typing import IO, Any, AnyStr, BinaryIO, Generator, TextIO, TypeAlias
+from typing import (
+    IO,
+    Any,
+    AnyStr,
+    BinaryIO,
+    Generator,
+    Iterable,
+    TextIO,
+    TypeAlias,
+    TypeVar,
+)
 
 from fsspec import open
 from fsspec.core import OpenFile
@@ -44,12 +55,17 @@ DEFAULT_WRITE_MODE = "wb"
 
 Uri: TypeAlias = PathLike | Path | BinaryIO | TextIO | str
 GenericIO: TypeAlias = OpenFile | TextIO | BinaryIO
+T = TypeVar("T")
 
 
 def _get_sysio(mode: str | None = DEFAULT_MODE) -> TextIO | BinaryIO:
-    if mode and mode.startswith("r"):
-        return sys.stdin
-    return sys.stdout
+    if mode and "r" in mode:
+        io = sys.stdin
+    else:
+        io = sys.stdout
+    if mode and "b" in mode:
+        return io.buffer
+    return io
 
 
 class SmartHandler:
@@ -58,23 +74,24 @@ class SmartHandler:
         uri: Uri,
         **kwargs: Any,
     ) -> None:
-        self.uri = ensure_uri(uri)
+        self.uri = uri
         self.is_buffer = self.uri == "-"
         kwargs["mode"] = kwargs.get("mode", DEFAULT_MODE)
         self.sys_io = _get_sysio(kwargs["mode"])
-        if hasattr(self.sys_io, "buffer"):
-            self.sys_io = self.sys_io.buffer
         self.kwargs = kwargs
         self.handler: IO | None = None
 
     def open(self) -> IO[AnyStr]:
         try:
             if self.is_buffer:
-                self.handler = self.sys_io
+                return self.sys_io
+            elif isinstance(self.uri, (BytesIO, StringIO)):
+                return self.uri
             else:
+                self.uri = ensure_uri(self.uri)
                 handler: OpenFile = open(self.uri, **self.kwargs)
                 self.handler = handler.open()
-            return self.handler
+                return self.handler
         except FileNotFoundError as e:
             raise DoesNotExist from e
 
@@ -184,3 +201,42 @@ def smart_write(
             content = content.encode()
     with smart_open(uri, mode, **kwargs) as fh:
         fh.write(content)
+
+
+def logged_io_items(
+    items: Iterable[T], uri: Uri, action: str, chunk_size: int | None = 10_000
+) -> Generator[T, None, None]:
+    """
+    Log process of iterating items for io operations.
+
+    Example:
+        ```python
+        from anystore.io import logged_io_items
+
+        items = [...]
+        for item in logged_io_items(items, "local", "Read"):
+            yield item
+        ```
+
+    Args:
+        items: Sequence of any items
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or
+            `s3://mybucket/foo` (for logging purpose)
+        action: Action name to log
+        chunk_size: Log on every chunk_size
+
+    Yields:
+        The input items
+    """
+    chunk_size = chunk_size or 10_000
+    ix = 0
+    model = "Item"
+    for ix, item in enumerate(items, 1):
+        if ix == 1:
+            model = item.__class__.__name__.title()
+        if ix % chunk_size == 0:
+            model = item.__class__.__name__.title()
+            log.info(f"{action} `{model}` {ix} ...", uri=ensure_uri(uri))
+        yield item
+    if ix:
+        log.info(f"{action} {ix} `{model}s`: Done.", uri=ensure_uri(uri))

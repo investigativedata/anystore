@@ -1,15 +1,10 @@
-import pytest
+from io import BytesIO
 from pathlib import Path
 
+import pytest
 from moto import mock_aws
 
-from anystore.io import (
-    SmartHandler,
-    smart_open,
-    smart_stream,
-    smart_read,
-    smart_write,
-)
+from anystore.io import SmartHandler, smart_open, smart_read, smart_stream, smart_write
 from tests.conftest import setup_s3
 
 
@@ -31,12 +26,19 @@ def test_io_read(fixtures_path: Path):
             break
     assert tested
 
+    stream = BytesIO(b"hello")
+    assert smart_read(stream) == b"hello"
+
 
 def test_io_write(tmp_path: Path):
     path = tmp_path / "lorem.txt"
     smart_write(path, b"Lorem")
     assert path.exists() and path.is_file()
     assert smart_read(path, "r") == "Lorem"
+
+    out = BytesIO()
+    smart_write(out, b"hello")
+    assert out.getvalue() == b"hello"
 
 
 def test_io_write_stdout(capsys):

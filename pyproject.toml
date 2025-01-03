@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anystore"
-version = "0.2.1"
+version = "0.2.2"
 description = "Store and cache things anywhere"
 authors = ["Simon Wörpel <simon.woerpel@pm.me>"]
 license = "GPL-3.0"
@@ -35,7 +35,7 @@ s3fs = ">2023.10,<2025"
 gcsfs = ">2023.10,<2025"
 adlfs = ">2023.10,<2025"
 typer = ">=0.9,<0.16"
-pyaml = ">=23.12,<25.0"
+pyaml = ">=23.12,<26.0"
 cloudpickle = "^3.0.0"
 pydantic-settings = "^2.2.1"
 rich = "^13.7.0"
@@ -44,13 +44,13 @@ cryptography = ">=42.0.4"
 structlog = "^24.4.0"
 shortuuid = "^1.0.13"
 sshfs = "^2024.9.0"
+sqlalchemy = {version = "^2.0.36", optional = true}
+redis = {version = "^5.2.1", optional = true}
+fakeredis = {version = "^2.26.2", optional = true}
 
-[tool.poetry.group.redis.dependencies]
-redis = "^5.0.2"
-fakeredis = "^2.21.1"
-
-[tool.poetry.group.sql.dependencies]
-sqlalchemy = "^2.0.28"
+[tool.poetry.extras]
+sql = ["sqlalchemy"]
+redis = ["redis", "fakeredis"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
@@ -64,7 +64,7 @@ flake8 = ">=6.1,<8.0"
 ipdb = "^0.13.13"
 bump2version = "^1.0.1"
 moto = "^5.0.11"
-pytest-asyncio = ">=0.23.8,<0.25.0"
+pytest-asyncio = ">=0.23.8,<0.26.0"
 mkdocs-material = "^9.5.39"
 mkdocs-autorefs = "^1.2.0"
 mkdocstrings-python = "^1.12.2"
@@ -79,6 +79,3 @@ build-backend = "poetry.core.masonry.api"
 REDIS_DEBUG = 1
 DEBUG = 1
 ANYSTORE_YAML_URI = "./tests/fixtures/store.yml"
-AWS_ACCESS_KEY_ID = "foo"
-AWS_SECRET_ACCESS_KEY = "bar"
-#FSSPEC_S3_ENDPOINT_URL = ""

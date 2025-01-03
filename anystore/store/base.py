@@ -184,6 +184,8 @@ class BaseStore(StoreModel, AbstractBackend):
             ttl: Time to live (in seconds) for that key if the backend supports
                 it (e.g. redis, sql)
         """
+        if not self.store_none_values:
+            return
         serialization_mode = serialization_mode or self.serialization_mode
         serialization_func = serialization_func or self.serialization_func
         model = model or self.model
@@ -255,6 +257,47 @@ class BaseStore(StoreModel, AbstractBackend):
         """
         for key in self._iterate_keys(prefix, exclude_prefix, glob):
             yield unquote(key)
+
+    def iterate_values(
+        self,
+        prefix: str | None = None,
+        exclude_prefix: str | None = None,
+        glob: str | None = None,
+        serialization_mode: Mode | None = None,
+        deserialization_func: Callable | None = None,
+        model: Model | None = None,
+        **kwargs,
+    ) -> Generator[Any, None, None]:
+        """
+        Iterate through all the values in the store based on given criteria.
+        Criteria can be combined (e.g. include but exclude a subset).
+
+        Example:
+            ```python
+            yield from store.iterate_values(prefix="dataset1", glob="*.pdf", model=MyModel)
+            ```
+
+        Args:
+            prefix: Include only keys with the given prefix (e.g. "foo/bar")
+            exclude_prefix: Exclude keys with this prefix
+            glob: Path-style glob pattern for keys to filter (e.g. "foo/**/*.json")
+            serialization_mode: Serialize result ("auto", "raw", "pickle",
+                "json"), overrides store settings
+            deserialization_func: Specific function to use (ignores
+                `serialization_mode`), overrides store settings
+            model: Pydantic serialization model (ignores `serialization_mode`
+                and `deserialization_func`), overrides store settings
+
+        Returns:
+            The matching values as a generator of any (serialized) type
+        """
+        for key in self._iterate_keys(prefix, exclude_prefix, glob):
+            yield self.get(
+                key,
+                serialization_mode=serialization_mode,
+                deserialization_func=deserialization_func,
+                model=model,
+            )
 
     def checksum(
         self, key: Uri, algorithm: str | None = DEFAULT_HASH_ALGORITHM, **kwargs: Any

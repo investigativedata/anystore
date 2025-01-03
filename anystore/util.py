@@ -1,6 +1,6 @@
 import hashlib
 import shutil
-from io import BytesIO
+from io import BytesIO, StringIO
 from os.path import splitext
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -78,6 +78,8 @@ def ensure_uri(uri: Any) -> str:
     Raises:
         ValueError: For invalid uri (e.g. stdin: "-")
     """
+    if isinstance(uri, (BytesIO, StringIO)):
+        raise ValueError(f"Invalid uri: `{uri}`")
     if not uri:
         raise ValueError(f"Invalid uri: `{uri}`")
     if uri == "-":  # stdin/stout
@@ -267,6 +269,8 @@ def get_extension(uri: Uri) -> str | None:
     Returns:
         Extension or `None`
     """
+    if isinstance(uri, (BytesIO, StringIO)):
+        return None
     _, ext = splitext(str(uri))
     if ext:
         return ext[1:].lower()

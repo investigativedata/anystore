@@ -42,7 +42,8 @@ def cli_store(
     if version:
         print(__version__)
         raise typer.Exit()
-    state["uri"] = store
+    if store:
+        state["uri"] = store
     configure_logging()
 
 

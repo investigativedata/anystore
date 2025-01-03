@@ -74,6 +74,8 @@ class StoreModel(BaseModel):
     """Default pydantic model for serialization"""
     raise_on_nonexist: bool | None = settings.raise_on_nonexist
     """Raise `anystore.exceptions.DoesNotExist` if key doesn't exist"""
+    store_none_values: bool | None = True
+    """Store `None` as value in store"""
     default_ttl: int | None = settings.default_ttl
     """Default ttl for keys (only backends that support it: redis, sql, ..)"""
     backend_config: dict[str, Any] | None = None
