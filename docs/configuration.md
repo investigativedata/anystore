@@ -86,7 +86,7 @@ Configure parameters via `client_kwargs` in `backend_config`, e.g.:
 ```python
 from anystore import get_store
 
-store = get_store(uri="s3://mybucket/data", backend_config={"client_kwargs":{
+store = get_store(uri="s3://mybucket/data", backend_config={"client_kwargs": {
     "aws_access_key_id": "my-key",
     "aws_secret_access_key": "***",
     "endpoint_url": "https://s3.local"
@@ -115,14 +115,14 @@ sqlite:///data.db
 postgresql://user:password@hostname:port/database?sslmode=verify-full
 ```
 
-Configure parameters via `sql` in `backend_config` or env `ANYSTORE__SQL__*`
+Configure parameters via `sql` in `backend_config` or env `ANYSTORE_BACKEND_CONFIG__SQL__*`
 
 #### sql settings and their defaults
 
 ```python
 from anystore import get_store
 
-store = get_store(uri="postgresql:///db", backend_config={"sql":{
+store = get_store(uri="postgresql:///db", backend_config={"sql": {
     "table": "anystore",
     "pool_size": 5,
     "engine_kwargs": {}  # sqlalchemy kwargs
