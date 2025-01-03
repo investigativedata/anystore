@@ -209,10 +209,20 @@ def logged_io_items(
     """
     Log process of iterating items for io operations.
 
+    Example:
+        ```python
+        from anystore.io import logged_io_items
+
+        items = [...]
+        for item in logged_io_items(items, "local", "Read"):
+            yield item
+        ```
+
     Args:
         items: Sequence of any items
-        uri: string or path-like key uri to open, e.g. `./local/data.txt` or `s3://mybucket/foo`
-        action: Action to log
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or
+            `s3://mybucket/foo` (for logging purpose)
+        action: Action name to log
         chunk_size: Log on every chunk_size
 
     Yields:
