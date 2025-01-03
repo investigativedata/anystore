@@ -48,6 +48,7 @@ def get_store(
         A `Store` class
     """
     settings = settings or Settings()
+    kwargs = {**{"backend_config": settings.backend_config}, **kwargs}
     if uri is None:
         if settings.yaml_uri is not None:
             store = BaseStore.from_yaml_uri(settings.yaml_uri, **kwargs)
