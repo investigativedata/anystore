@@ -59,7 +59,7 @@ def test_util_uris():
 
 def test_util_checksum(tmp_path, fixtures_path):
     assert (
-        util.make_data_checksum("stable") == "b34d0813267b917b79d574726d2b0ac2e3929a87"
+        util.make_data_checksum("stable") == "4fbacc2fa0ffdbb11bf1ad6925b886ebd08dd15f"
     )
     assert len(util.make_data_checksum("a")) == 40
     assert len(util.make_data_checksum({"foo": "bar"})) == 40

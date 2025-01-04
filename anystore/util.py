@@ -230,6 +230,10 @@ def make_data_checksum(data: Any, algorithm: str = DEFAULT_HASH_ALGORITHM) -> st
     Returns:
         Generated checksum
     """
+    if isinstance(data, bytes):
+        return make_checksum(BytesIO(data), algorithm)
+    if isinstance(data, str):
+        return make_checksum(BytesIO(data.encode()), algorithm)
     data = repr(data).encode()
     return make_checksum(BytesIO(data), algorithm)
 
