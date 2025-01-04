@@ -24,7 +24,7 @@ See below for reference details.
 """
 
 import functools
-from typing import Any, Callable
+from typing import Any, Callable, Type
 
 from pydantic import BaseModel
 
@@ -61,7 +61,7 @@ def _handle_result(key: str, res: Any, store: BaseStore) -> Any:
 def anycache(
     func: Callable[..., Any] | None = None,
     store: BaseStore | None = None,
-    model: BaseModel | None = None,
+    model: Type[BaseModel] | None = None,
     key_func: Callable[..., str | None] | None = None,
     serialization_mode: Mode | None = "auto",
     serialization_func: Callable | None = None,
