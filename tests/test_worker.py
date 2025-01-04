@@ -5,7 +5,9 @@ from datetime import timedelta
 from io import BytesIO
 from typing import Any, Generator
 
+from anystore.decorators import anycache
 from anystore.io import smart_read, smart_write
+from anystore.store import get_store
 from anystore.worker import Worker, WorkerStatus, Writer, WriteWorker
 
 
@@ -111,3 +113,23 @@ def test_worker_writer(tmp_path):
     res = worker.run()
     assert res.done == 100
     assert smart_read(out) == b"10\n99\n"
+
+
+def test_worker_cached():
+    cache = get_store("memory://")
+
+    class TestWorker(Worker):
+        @anycache(store=cache, key_func=lambda _, task: str(task))
+        def handle_task(self, task):
+            if task == 56:
+                raise ValueError
+            return "yes"
+
+        def exception(self, task: Any, e: Exception) -> None:
+            pass
+
+    worker = TestWorker(tasks=range(100))
+    res = worker.run()
+    assert res.done == 99
+    assert cache.get("99") == "yes"
+    assert not cache.exists("56")
