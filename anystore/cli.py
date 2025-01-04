@@ -87,6 +87,7 @@ def cli_keys(
     exclude_prefix: Annotated[
         Optional[str], typer.Option(..., help="Exclude key prefix")
     ] = None,
+    info: Annotated[Optional[bool], typer.Option(..., help="Print metadata")] = False,
 ):
     """
     Iterate keys in given store
@@ -97,7 +98,11 @@ def cli_keys(
             for key in S.iterate_keys(
                 prefix=prefix, exclude_prefix=exclude_prefix, glob=glob
             ):
-                line = f"{key}\n".encode()
+                if info:
+                    data = S.info(key)
+                    line = (data.model_dump_json() + "\n").encode()
+                else:
+                    line = f"{key}\n".encode()
                 out.write(line)
 
 

@@ -20,7 +20,11 @@ class Settings(BaseSettings):
         `ANYSTORE_BACKEND_CONFIG__REDIS_PREFIX="foo"`
     """
 
-    model_config = SettingsConfigDict(env_prefix="anystore_", env_nested_delimiter="__")
+    model_config = SettingsConfigDict(
+        env_prefix="anystore_",
+        env_nested_delimiter="__",
+        nested_model_default_partial_update=True,
+    )
 
     uri: str = ".anystore"
     """Default store base uri"""
