@@ -210,7 +210,7 @@ def make_checksum(io: BinaryIO, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
         Generated checksum
     """
     hash_ = getattr(hashlib, algorithm)()
-    for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
+    for chunk in iter(lambda: io.read(65536 * 128 * hash_.block_size), b""):
         hash_.update(chunk)
     return hash_.hexdigest()
 
