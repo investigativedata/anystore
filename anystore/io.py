@@ -88,12 +88,12 @@ class SmartHandler:
             elif isinstance(self.uri, (BytesIO, StringIO)):
                 return self.uri
             else:
-                self.uri = ensure_uri(self.uri)
+                self.uri = ensure_uri(self.uri, http_unquote=False)
                 handler: OpenFile = open(self.uri, **self.kwargs)
                 self.handler = handler.open()
                 return self.handler
         except FileNotFoundError as e:
-            raise DoesNotExist from e
+            raise DoesNotExist(str(e))
 
     def close(self):
         if not self.is_buffer and self.handler is not None:

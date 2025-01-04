@@ -106,6 +106,11 @@ class StoreModel(BaseModel):
         return not self.is_sql and self.scheme not in (SCHEME_REDIS, SCHEME_MEMORY)
 
     @cached_property
+    def is_http(self) -> bool:
+        """Check if it is a http(s) remote store"""
+        return self.scheme.startswith("http")
+
+    @cached_property
     def is_sql(self) -> bool:
         """Check if it is a sql-like store (sqlite, postgres, ...)"""
         return "sql" in self.scheme

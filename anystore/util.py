@@ -55,7 +55,7 @@ def clean_dict(data: Any) -> dict[str, Any]:
     )
 
 
-def ensure_uri(uri: Any) -> str:
+def ensure_uri(uri: Any, http_unquote: bool | None = True) -> str:
     """
     Normalize arbitrary uri-like input to an absolute uri with scheme.
 
@@ -71,6 +71,7 @@ def ensure_uri(uri: Any) -> str:
         ```
     Args:
         uri: uri-like string
+        http_unquote: Return unquoted uri, manually disable for some http edge cases
 
     Returns:
         Absolute uri with scheme
@@ -91,6 +92,8 @@ def ensure_uri(uri: Any) -> str:
     uri = str(uri)
     parsed = urlparse(uri)
     if parsed.scheme:
+        if parsed.scheme.startswith("http") and not http_unquote:
+            return uri
         return unquote(uri)
     return unquote(Path(uri).absolute().as_uri())
 
