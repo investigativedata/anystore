@@ -204,7 +204,12 @@ def smart_write(
 
 
 def logged_io_items(
-    items: Iterable[T], uri: Uri, action: str, chunk_size: int | None = 10_000
+    items: Iterable[T],
+    uri: Uri,
+    action: str,
+    chunk_size: int | None = 10_000,
+    item_name: str | None = None,
+    **log_kwargs,
 ) -> Generator[T, None, None]:
     """
     Log process of iterating items for io operations.
@@ -230,13 +235,17 @@ def logged_io_items(
     """
     chunk_size = chunk_size or 10_000
     ix = 0
-    model = "Item"
+    item_name = item_name or "Item"
     for ix, item in enumerate(items, 1):
         if ix == 1:
-            model = item.__class__.__name__.title()
+            item_name = item_name or item.__class__.__name__.title()
         if ix % chunk_size == 0:
-            model = item.__class__.__name__.title()
-            log.info(f"{action} `{model}` {ix} ...", uri=ensure_uri(uri))
+            item_name = item_name or item.__class__.__name__.title()
+            log.info(
+                f"{action} `{item_name}` {ix} ...", uri=ensure_uri(uri), **log_kwargs
+            )
         yield item
     if ix:
-        log.info(f"{action} {ix} `{model}s`: Done.", uri=ensure_uri(uri))
+        log.info(
+            f"{action} {ix} `{item_name}s`: Done.", uri=ensure_uri(uri), **log_kwargs
+        )
