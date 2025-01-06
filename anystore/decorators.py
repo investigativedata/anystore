@@ -30,8 +30,11 @@ from pydantic import BaseModel
 
 from anystore.exceptions import DoesNotExist
 from anystore.serialize import Mode
+from anystore.settings import Settings
 from anystore.store import BaseStore, get_store
 from anystore.util import make_signature_key
+
+settings = Settings()
 
 
 def _setup_decorator(**kwargs) -> tuple[Callable, BaseStore]:
@@ -67,6 +70,7 @@ def anycache(
     serialization_func: Callable | None = None,
     deserialization_func: Callable | None = None,
     ttl: int | None = None,
+    use_cache: bool | None = settings.use_cache,
     **store_kwargs: Any
 ) -> Callable[..., Any]:
     """
@@ -98,6 +102,7 @@ def anycache(
         model: Pydantic model to use for serialization from a json bytes string
         key_func: Function to compute the cache key
         ttl: Key ttl for supported backends
+        use_cache: Lookup cache (default), results are always stored
         **store_kwargs: Any other store options or backend specific
             configuration to pass through
 
@@ -120,7 +125,7 @@ def anycache(
         def _inner(*args, **kwargs):
             key = key_func(*args, **kwargs)
             try:
-                if key is not None:
+                if key is not None and use_cache:
                     return store.get(key)
                 raise DoesNotExist
             except DoesNotExist:
@@ -134,19 +139,19 @@ def anycache(
     return _decorator(func)
 
 
-def async_anycache(func=None, **store_kwargs):
+def async_anycache(func=None, **kwargs):
     """
     Async implementation of the [@anycache][anystore.decorators.anycache]
     decorator
     """
-    key_func, store = _setup_decorator(**store_kwargs)
+    key_func, store = _setup_decorator(**kwargs)
 
     def _decorator(func):
         @functools.wraps(func)
         async def _inner(*args, **kwargs):
             key = key_func(*args, **kwargs)
             try:
-                if key is not None:
+                if key is not None and kwargs.get("use_cache"):
                     return store.get(key)
                 raise DoesNotExist
             except DoesNotExist:

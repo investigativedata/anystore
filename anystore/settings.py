@@ -64,3 +64,6 @@ class Settings(BaseSettings):
 
     worker_heartbeat: int = Field(alias="worker_heartbeat", default=15)
     """Default heartbeat for worker logging"""
+
+    use_cache: bool = Field(alias="cache", default=True)
+    """Globally enable or disable caching (used in @anycache decorator)"""
