@@ -100,12 +100,14 @@ def ensure_uri(uri: Any, http_unquote: bool | None = True) -> str:
 
 def path_from_uri(uri: Uri) -> Path:
     """
-    Get `pathlib.Path` object from a file uri
+    Get `pathlib.Path` object from an uri
 
     Examples:
         >>> path_from_uri("/foo/bar")
         Path("/foo/bar")
         >>> path_from_uri("file:///foo/bar")
+        Path("/foo/bar")
+        >>> path_from_uri("s3://foo/bar")
         Path("/foo/bar")
 
     Args:
@@ -115,9 +117,8 @@ def path_from_uri(uri: Uri) -> Path:
         Path object for given uri
     """
     uri = ensure_uri(uri)
-    if urlparse(uri).scheme != SCHEME_FILE:
-        raise NotImplementedError(f"Wrong scheme: `{uri}`")
-    return Path(uri[7:])  # file://
+    path = "/" + uri[len(urlparse(uri).scheme) + 3 :].lstrip("/")  # strip <scheme>://
+    return Path(path)
 
 
 def name_from_uri(uri: Uri) -> str:

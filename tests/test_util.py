@@ -48,13 +48,11 @@ def test_util_uris():
 
     assert util.path_from_uri("/foo/bar") == PosixPath("/foo/bar")
     assert util.path_from_uri("file:///foo/bar") == PosixPath("/foo/bar")
+    assert util.path_from_uri("https://foo/bar") == PosixPath("/foo/bar")
+    assert util.path_from_uri("s3://foo") == PosixPath("/foo")
+
     assert util.name_from_uri("foo/bar") == "bar"
-
-    with pytest.raises(NotImplementedError):
-        util.path_from_uri("s3://foo")
-
-    with pytest.raises(NotImplementedError):
-        util.name_from_uri("s3://foo")
+    assert util.name_from_uri("s3://foo/bar") == "bar"
 
 
 def test_util_checksum(tmp_path, fixtures_path):
