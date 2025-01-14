@@ -1,10 +1,19 @@
 from io import BytesIO
 from pathlib import Path
 
+import orjson
 import pytest
 from moto import mock_aws
 
-from anystore.io import SmartHandler, smart_open, smart_read, smart_stream, smart_write
+from anystore.io import (
+    DEFAULT_WRITE_MODE,
+    SmartHandler,
+    smart_open,
+    smart_read,
+    smart_stream,
+    smart_stream_json,
+    smart_write,
+)
 from tests.conftest import setup_s3
 
 
@@ -58,7 +67,7 @@ def test_io_smart_open(tmp_path: Path, fixtures_path: Path):
 
 
 @mock_aws
-def test_io_generic(fixtures_path: Path):
+def test_io_generic():
     setup_s3()
     uri = "s3://anystore/foo"
     content = b"bar"
@@ -97,3 +106,14 @@ def test_io_invalid():
         smart_read("")
     with pytest.raises(ValueError):
         smart_read(None)
+
+
+def test_io_stream_json(tmp_path):
+    data = [{"1": "a"}, {"foo": "foo"}]
+    fp = tmp_path / "data.json"
+    with smart_open(fp, DEFAULT_WRITE_MODE) as o:
+        for item in data:
+            o.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
+
+    loaded = [d for d in smart_stream_json(fp)]
+    assert data == loaded
