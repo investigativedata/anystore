@@ -8,8 +8,9 @@ from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
 from banal import is_mapping
+from pydantic import BaseModel
 
-from anystore.types import Uri
+from anystore.types import SDict, Uri
 
 DEFAULT_HASH_ALGORITHM = "sha1"
 SCHEME_FILE = "file"
@@ -296,3 +297,10 @@ def rm_rf(uri: Uri) -> None:
             p.unlink()
     except Exception:
         pass
+
+
+def model_dump(obj: BaseModel) -> SDict:
+    """
+    Serialize a pydantic object to a dict by alias and json mode
+    """
+    return obj.model_dump(by_alias=True, mode="json")
