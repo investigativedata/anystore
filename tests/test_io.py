@@ -5,7 +5,6 @@ import pytest
 from moto import mock_aws
 
 from anystore.io import (
-    DEFAULT_WRITE_MODE,
     SmartHandler,
     smart_open,
     smart_read,
