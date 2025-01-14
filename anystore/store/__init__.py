@@ -3,7 +3,6 @@
 """
 
 import os
-from functools import cache
 from typing import Any
 from urllib.parse import urlparse
 
@@ -19,7 +18,6 @@ from anystore.util import ensure_uri
 log = get_logger(__name__)
 
 
-@cache
 def get_store(
     uri: str | None = None, settings: Settings | None = None, **kwargs: Any
 ) -> BaseStore:
