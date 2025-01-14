@@ -1,7 +1,6 @@
 from io import BytesIO
 from pathlib import Path
 
-import orjson
 import pytest
 from moto import mock_aws
 
@@ -13,6 +12,7 @@ from anystore.io import (
     smart_stream,
     smart_stream_json,
     smart_write,
+    smart_write_json,
 )
 from tests.conftest import setup_s3
 
@@ -108,12 +108,9 @@ def test_io_invalid():
         smart_read(None)
 
 
-def test_io_stream_json(tmp_path):
+def test_io_json(tmp_path):
     data = [{"1": "a"}, {"foo": "foo"}]
     fp = tmp_path / "data.json"
-    with smart_open(fp, DEFAULT_WRITE_MODE) as o:
-        for item in data:
-            o.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
-
+    smart_write_json(fp, data)
     loaded = [d for d in smart_stream_json(fp)]
     assert data == loaded

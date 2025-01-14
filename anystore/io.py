@@ -47,7 +47,7 @@ from fsspec.core import OpenFile
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
-from anystore.types import SDictGenerator
+from anystore.types import SDict, SDictGenerator
 from anystore.util import ensure_uri
 
 log = get_logger(__name__)
@@ -229,6 +229,29 @@ def smart_write(
             content = content.encode()
     with smart_open(uri, mode, **kwargs) as fh:
         fh.write(content)
+
+
+def smart_write_json(
+    uri: Uri,
+    items: Iterable[SDict],
+    mode: str | None = DEFAULT_WRITE_MODE,
+    **kwargs: Any,
+) -> None:
+    """
+    Write python data to json
+
+    Args:
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or `s3://mybucket/foo`
+        items: Iterable of dictionaries
+        mode: open mode, default `wb` for byte writing.
+        **kwargs: pass through storage-specific options
+    """
+    with smart_open(uri, mode, **kwargs) as fh:
+        for item in items:
+            line = orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE)
+            if "b" not in mode:
+                line = line.decode()
+            fh.write(line)
 
 
 def logged_items(
