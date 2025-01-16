@@ -3,7 +3,7 @@ name = "anystore"
 version = "0.2.2"
 description = "Store and cache things anywhere"
 authors = [{ name = "Simon Wörpel", email = "simon.woerpel@pm.me" }]
-license = "GPL-3.0"
+license = "AGPLv3+"
 readme = "README.md"
 classifiers = [
     "Intended Audience :: Developers",
