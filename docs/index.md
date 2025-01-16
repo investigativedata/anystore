@@ -28,4 +28,15 @@ Think of it as a `key -> value` store, and `anystore` acts as a [**cache backend
 - [investigraph](https://github.com/investigativedata/investigraph),  a framework to manage collections of structured [followthemoney](https://followthemoney.tech) data
 - [ftmq-api](https://github.com/investigativedata/ftmq-api), a simple api on top off `ftmq` built with [FastApi](https://fastapi.tiangolo.com/)
 - [ftm-geocode](https://github.com/investigativedata/ftm-geocode), batch parse and geocode addresses from followthemoney entities
-- [leakrfc](https://github.com/investigativedata/leakrfc), a library to crawl, sync and move around document collections (in progress)
+- [leakrfc](https://github.com/investigativedata/leakrfc), a library to crawl, sync and move around document collections
+
+## License and Copyright
+
+`anystore`, (C) 2024 investigativedata.io
+`anystore`, (C) 2025 investigativedata.io
+
+`anystore` is licensed under the AGPLv3 or later license.
+
+Prior to version 0.3.0, `anystore` was released under the GPL-3.0 license.
+
+see [NOTICE](./NOTICE) and [LICENSE](./LICENSE)
