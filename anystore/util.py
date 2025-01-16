@@ -8,8 +8,9 @@ from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunsplit
 
 from banal import clean_dict as _clean_dict
 from banal import is_mapping
+from pydantic import BaseModel
 
-from anystore.types import Uri
+from anystore.types import SDict, Uri
 
 DEFAULT_HASH_ALGORITHM = "sha1"
 SCHEME_FILE = "file"
@@ -55,7 +56,7 @@ def clean_dict(data: Any) -> dict[str, Any]:
     )
 
 
-def ensure_uri(uri: Any) -> str:
+def ensure_uri(uri: Any, http_unquote: bool | None = True) -> str:
     """
     Normalize arbitrary uri-like input to an absolute uri with scheme.
 
@@ -71,6 +72,7 @@ def ensure_uri(uri: Any) -> str:
         ```
     Args:
         uri: uri-like string
+        http_unquote: Return unquoted uri, manually disable for some http edge cases
 
     Returns:
         Absolute uri with scheme
@@ -91,18 +93,22 @@ def ensure_uri(uri: Any) -> str:
     uri = str(uri)
     parsed = urlparse(uri)
     if parsed.scheme:
+        if parsed.scheme.startswith("http") and not http_unquote:
+            return uri
         return unquote(uri)
     return unquote(Path(uri).absolute().as_uri())
 
 
 def path_from_uri(uri: Uri) -> Path:
     """
-    Get `pathlib.Path` object from a file uri
+    Get `pathlib.Path` object from an uri
 
     Examples:
         >>> path_from_uri("/foo/bar")
         Path("/foo/bar")
         >>> path_from_uri("file:///foo/bar")
+        Path("/foo/bar")
+        >>> path_from_uri("s3://foo/bar")
         Path("/foo/bar")
 
     Args:
@@ -112,9 +118,8 @@ def path_from_uri(uri: Uri) -> Path:
         Path object for given uri
     """
     uri = ensure_uri(uri)
-    if urlparse(uri).scheme != SCHEME_FILE:
-        raise NotImplementedError(f"Wrong scheme: `{uri}`")
-    return Path(uri[7:])  # file://
+    path = "/" + uri[len(urlparse(uri).scheme) + 3 :].lstrip("/")  # strip <scheme>://
+    return Path(path)
 
 
 def name_from_uri(uri: Uri) -> str:
@@ -210,7 +215,7 @@ def make_checksum(io: BinaryIO, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
         Generated checksum
     """
     hash_ = getattr(hashlib, algorithm)()
-    for chunk in iter(lambda: io.read(128 * hash_.block_size), b""):
+    for chunk in iter(lambda: io.read(65536 * 128 * hash_.block_size), b""):
         hash_.update(chunk)
     return hash_.hexdigest()
 
@@ -230,6 +235,10 @@ def make_data_checksum(data: Any, algorithm: str = DEFAULT_HASH_ALGORITHM) -> st
     Returns:
         Generated checksum
     """
+    if isinstance(data, bytes):
+        return make_checksum(BytesIO(data), algorithm)
+    if isinstance(data, str):
+        return make_checksum(BytesIO(data.encode()), algorithm)
     data = repr(data).encode()
     return make_checksum(BytesIO(data), algorithm)
 
@@ -288,3 +297,10 @@ def rm_rf(uri: Uri) -> None:
             p.unlink()
     except Exception:
         pass
+
+
+def model_dump(obj: BaseModel) -> SDict:
+    """
+    Serialize a pydantic object to a dict by alias and json mode
+    """
+    return obj.model_dump(by_alias=True, mode="json")

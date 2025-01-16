@@ -20,7 +20,11 @@ class Settings(BaseSettings):
         `ANYSTORE_BACKEND_CONFIG__REDIS_PREFIX="foo"`
     """
 
-    model_config = SettingsConfigDict(env_prefix="anystore_")
+    model_config = SettingsConfigDict(
+        env_prefix="anystore_",
+        env_nested_delimiter="__",
+        nested_model_default_partial_update=True,
+    )
 
     uri: str = ".anystore"
     """Default store base uri"""
@@ -60,3 +64,6 @@ class Settings(BaseSettings):
 
     worker_heartbeat: int = Field(alias="worker_heartbeat", default=15)
     """Default heartbeat for worker logging"""
+
+    use_cache: bool = Field(alias="cache", default=True)
+    """Globally enable or disable caching (used in @anycache decorator)"""

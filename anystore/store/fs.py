@@ -2,6 +2,7 @@
 Store backend using any file-like location usable via `fsspec`
 """
 
+import re
 from datetime import datetime
 from functools import cached_property
 from typing import BinaryIO, Generator, TextIO
@@ -19,7 +20,7 @@ from anystore.util import SCHEME_S3, join_relpaths, join_uri
 class Store(BaseStore):
     @cached_property
     def _fs(self) -> fsspec.AbstractFileSystem:
-        return fsspec.url_to_fs(self.uri)[0]
+        return fsspec.url_to_fs(self.uri, **self.ensure_kwargs())[0]
 
     def _write(self, key: str, value: Value, **kwargs) -> None:
         kwargs.pop("ttl", None)
@@ -66,20 +67,28 @@ class Store(BaseStore):
         glob = glob or ""
 
         if glob:
-            for key in self._fs.glob(self.get_key(join_relpaths(prefix, glob))):
+            glob_path = self.get_key(join_relpaths(prefix, glob))
+            for key in self._fs.glob(glob_path):
                 if self.scheme == SCHEME_S3:  # /{bucket}/{base_path}
                     key = f"{self.scheme}://{key}"
                 key = self._get_relpath(join_uri(self.uri, key))
                 if not exclude_prefix or not key.startswith(exclude_prefix):
-                    yield key
+                    # FIXME
+                    if not self.is_http or not HTTP_INDEX_RE.search(key):
+                        yield key
         else:
-            path = self.get_key(prefix)
+            path = self.get_key(prefix, http_quoted=True) + "/"
             for _, children, keys in self._fs.walk(path, maxdepth=1):
                 for key in keys:
                     key = join_relpaths(self._get_relpath(path), key)
                     if not exclude_prefix or not key.startswith(exclude_prefix):
-                        yield key
+                        # FIXME
+                        if not self.is_http or not HTTP_INDEX_RE.search(key):
+                            yield key
                 for key in children:
                     key = self._get_relpath(join_uri(path, key))
                     if not exclude_prefix or not key.startswith(exclude_prefix):
                         yield from self._iterate_keys(key, exclude_prefix)
+
+
+HTTP_INDEX_RE = re.compile(r"\?C=.&amp;.=.")

@@ -108,3 +108,14 @@ Before creating a commit, this checks for correct code formatting (isort, black)
 `anystore` uses [pytest](https://docs.pytest.org/en/stable/) as the testing framework.
 
     make test
+
+## License and Copyright
+
+`anystore`, (C) 2024 investigativedata.io
+`anystore`, (C) 2025 investigativedata.io
+
+`anystore` is licensed under the AGPLv3 or later license.
+
+Prior to version 0.3.0, `anystore` was released under the GPL-3.0 license.
+
+see [NOTICE](./NOTICE) and [LICENSE](./LICENSE)

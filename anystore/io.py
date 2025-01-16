@@ -41,11 +41,13 @@ from typing import (
     TypeVar,
 )
 
+import orjson
 from fsspec import open
 from fsspec.core import OpenFile
 
 from anystore.exceptions import DoesNotExist
 from anystore.logging import get_logger
+from anystore.types import SDict, SDictGenerator
 from anystore.util import ensure_uri
 
 log = get_logger(__name__)
@@ -88,12 +90,12 @@ class SmartHandler:
             elif isinstance(self.uri, (BytesIO, StringIO)):
                 return self.uri
             else:
-                self.uri = ensure_uri(self.uri)
+                self.uri = ensure_uri(self.uri, http_unquote=False)
                 handler: OpenFile = open(self.uri, **self.kwargs)
                 self.handler = handler.open()
                 return self.handler
         except FileNotFoundError as e:
-            raise DoesNotExist from e
+            raise DoesNotExist(str(e))
 
     def close(self):
         if not self.is_buffer and self.handler is not None:
@@ -168,6 +170,32 @@ def smart_stream(
             yield line
 
 
+def smart_stream_json(
+    uri: Uri, mode: str | None = DEFAULT_MODE, **kwargs: Any
+) -> SDictGenerator:
+    """
+    Stream line-based json as python objects.
+
+    Example:
+        ```python
+        from anystore import smart_stream_json
+
+        for data in smart_stream_json("s3://mybucket/data.json"):
+            yield data.get("foo")
+        ```
+
+    Args:
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or `s3://mybucket/foo`
+        mode: open mode, default `rb` for byte reading.
+        **kwargs: pass through storage-specific options
+
+    Yields:
+        A generator of `dict`s loaded via `orjson`
+    """
+    for line in smart_stream(uri, mode, **kwargs):
+        yield orjson.loads(line)
+
+
 def smart_read(uri: Uri, mode: str | None = DEFAULT_MODE, **kwargs: Any) -> AnyStr:
     """
     Return content for a given file-like key directly.
@@ -203,40 +231,70 @@ def smart_write(
         fh.write(content)
 
 
-def logged_io_items(
-    items: Iterable[T], uri: Uri, action: str, chunk_size: int | None = 10_000
+def smart_write_json(
+    uri: Uri,
+    items: Iterable[SDict],
+    mode: str | None = DEFAULT_WRITE_MODE,
+    **kwargs: Any,
+) -> None:
+    """
+    Write python data to json
+
+    Args:
+        uri: string or path-like key uri to open, e.g. `./local/data.txt` or `s3://mybucket/foo`
+        items: Iterable of dictionaries
+        mode: open mode, default `wb` for byte writing.
+        **kwargs: pass through storage-specific options
+    """
+    with smart_open(uri, mode, **kwargs) as fh:
+        for item in items:
+            line = orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE)
+            if "b" not in mode:
+                line = line.decode()
+            fh.write(line)
+
+
+def logged_items(
+    items: Iterable[T],
+    action: str,
+    chunk_size: int | None = 10_000,
+    uri: Uri | None = None,
+    item_name: str | None = None,
+    **log_kwargs,
 ) -> Generator[T, None, None]:
     """
     Log process of iterating items for io operations.
 
     Example:
         ```python
-        from anystore.io import logged_io_items
+        from anystore.io import logged_items
 
         items = [...]
-        for item in logged_io_items(items, "local", "Read"):
+        for item in logged_items(items, "Read", uri="/tmp/foo.csv"):
             yield item
         ```
 
     Args:
         items: Sequence of any items
-        uri: string or path-like key uri to open, e.g. `./local/data.txt` or
-            `s3://mybucket/foo` (for logging purpose)
         action: Action name to log
+        uri: string or path-like key uri (only for logging purpose)
         chunk_size: Log on every chunk_size
+        item_name: Name of item
 
     Yields:
         The input items
     """
     chunk_size = chunk_size or 10_000
     ix = 0
-    model = "Item"
+    item_name = item_name or "Item"
+    if uri:
+        uri = ensure_uri(uri)
     for ix, item in enumerate(items, 1):
         if ix == 1:
-            model = item.__class__.__name__.title()
+            item_name = item_name or item.__class__.__name__.title()
         if ix % chunk_size == 0:
-            model = item.__class__.__name__.title()
-            log.info(f"{action} `{model}` {ix} ...", uri=ensure_uri(uri))
+            item_name = item_name or item.__class__.__name__.title()
+            log.info(f"{action} `{item_name}` {ix} ...", uri=uri, **log_kwargs)
         yield item
     if ix:
-        log.info(f"{action} {ix} `{model}s`: Done.", uri=ensure_uri(uri))
+        log.info(f"{action} {ix} `{item_name}s`: Done.", uri=uri, **log_kwargs)

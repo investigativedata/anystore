@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 import pytest
 from pydantic import BaseModel
@@ -69,7 +70,6 @@ def test_decorator(tmp_path):
 
 
 def test_decorator_no_args(monkeypatch):
-    get_store.cache_clear()
     monkeypatch.delenv("ANYSTORE_YAML_URI")
 
     # without args
@@ -84,7 +84,6 @@ def test_decorator_no_args(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_decorator_async(monkeypatch):
-    get_store.cache_clear()
     monkeypatch.delenv("ANYSTORE_YAML_URI")
 
     @async_anycache
@@ -95,3 +94,30 @@ async def test_decorator_async(monkeypatch):
     assert await get_data6(6) == 6
     # now from cache:
     assert await get_data6(6) == 6
+
+
+def test_decorator_cache_disabled(monkeypatch):
+    monkeypatch.delenv("ANYSTORE_YAML_URI")
+
+    @anycache
+    def get_result(x):
+        return datetime.now().isoformat()
+
+    res = get_result(1)
+    assert res == get_result(1)  # cached
+
+    @anycache(use_cache=False)
+    def get_result2(x):
+        return datetime.now().isoformat()
+
+    new_res = get_result2(1)
+    assert res < new_res  # not cached
+    assert new_res == get_result(1)  # but new value now stored in cache
+
+    # same via env:
+    monkeypatch.setenv("CACHE", "0")
+    new_res = get_result(1)
+    assert res < new_res
+
+    monkeypatch.setenv("CACHE", "1")
+    assert new_res == get_result(1)

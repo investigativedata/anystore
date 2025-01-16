@@ -142,7 +142,7 @@ class Worker:
 
     def log_status(self) -> None:
         status = self.get_status()
-        log.info(f"[{self.job_id}] 💚 ", **status.model_dump())
+        log.info(f"[{self.job_id}] 💚 ", **status.model_dump(mode="json"))
 
     def get_status(self) -> WorkerStatus:
         return self.status_model(**{**self.status.model_dump(), **self.counter})

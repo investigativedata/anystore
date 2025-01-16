@@ -3,7 +3,6 @@
 """
 
 import os
-from functools import cache
 from typing import Any
 from urllib.parse import urlparse
 
@@ -19,7 +18,6 @@ from anystore.util import ensure_uri
 log = get_logger(__name__)
 
 
-@cache
 def get_store(
     uri: str | None = None, settings: Settings | None = None, **kwargs: Any
 ) -> BaseStore:
@@ -48,6 +46,7 @@ def get_store(
         A `Store` class
     """
     settings = settings or Settings()
+    kwargs = {**{"backend_config": settings.backend_config}, **kwargs}
     if uri is None:
         if settings.yaml_uri is not None:
             store = BaseStore.from_yaml_uri(settings.yaml_uri, **kwargs)

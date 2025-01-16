@@ -59,7 +59,8 @@ class MemoryStore(VirtualIOMixin, BaseStore):
         glob: str | None = None,
     ) -> Generator[str, None, None]:
         prefix = self.get_key(prefix or "")
-        for key in self._store:
+        keys = list(self._store.keys())
+        for key in keys:
             if key.startswith(prefix):
                 if not exclude_prefix or not key.startswith(exclude_prefix):
                     if not glob or fnmatch(key, glob):
